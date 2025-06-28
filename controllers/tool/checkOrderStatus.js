@@ -106,9 +106,9 @@ async function checkOrderStatus() {
               await user.save();
               const historyData = new HistoryUser({
                 username: order.username,
-                madon: "null",
+                madon: order.Madon,
                 hanhdong: "Hoàn tiền",
-                link: "",
+                link: order.link,
                 tienhientai: tiencu,
                 tongtien: soTienHoan,
                 tienconlai: user.balance,
@@ -123,7 +123,7 @@ async function checkOrderStatus() {
                   `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                   `👤 *Khách hàng:* ${order.username}\n` +
                   `💰 *Số tiền hoàn:* ${soTienHoan}\n` +
-                  `🔹 *Tướng ứng số lượng:* ${statusObj.remains} Rate : ${order.rate}\n` +
+                  `🔹 *Tướng ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
                   `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
                 try {
                   await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
@@ -148,9 +148,9 @@ async function checkOrderStatus() {
               await user.save();
               const historyData = new HistoryUser({
                 username: order.username,
-                madon: "null",
+                madon: order.Madon,
                 hanhdong: "Hoàn tiền",
-                link: "",
+                link:  order.link,
                 tienhientai: tiencu,
                 tongtien: soTienHoan,
                 tienconlai: user.balance,
@@ -165,7 +165,7 @@ async function checkOrderStatus() {
                   `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                   `👤 *Khách hàng:* ${order.username}\n` +
                   `💰 *Số tiền hoàn:* ${soTienHoan}\n` +
-                  `🔹 *Tướng ứng số lượng:* ${order.quantity} Rate : ${order.rate}\n` +
+                  `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
                   `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
                 try {
                   await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
@@ -227,9 +227,9 @@ async function checkOrderStatus() {
                   await user.save();
                   const historyData = new HistoryUser({
                     username: order.username,
-                    madon: "null",
+                    madon: order.Madon,
                     hanhdong: "Hoàn tiền",
-                    link: "",
+                    link: order.link,
                     tienhientai: tiencu,
                     tongtien: soTienHoan,
                     tienconlai: user.balance,
@@ -244,7 +244,7 @@ async function checkOrderStatus() {
                       `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                       `👤 *Khách hàng:* ${order.username}\n` +
                       `💰 *Số tiền hoàn:* ${soTienHoan}\n` +
-                      `🔹 *Tướng ứng số lượng:* ${statusObj.remains} Rate : ${order.rate}\n` +
+                      `🔹 *Tướng ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
                       `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
                     try {
                       await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
@@ -269,9 +269,9 @@ async function checkOrderStatus() {
                   await user.save();
                   const historyData = new HistoryUser({
                     username: order.username,
-                    madon: "null",
+                    madon: order.Madon,
                     hanhdong: "Hoàn tiền",
-                    link: "",
+                    link: order.link,
                     tienhientai: tiencu,
                     tongtien: soTienHoan,
                     tienconlai: user.balance,
@@ -286,7 +286,7 @@ async function checkOrderStatus() {
                       `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                       `👤 *Khách hàng:* ${order.username}\n` +
                       `💰 *Số tiền hoàn:* ${soTienHoan}\n` +
-                      `🔹 *Tướng ứng số lượng:* ${order.quantity} Rate : ${order.rate}\n` +
+                      `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
                       `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
                     try {
                       await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
