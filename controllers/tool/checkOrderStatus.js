@@ -101,7 +101,7 @@ async function checkOrderStatus() {
           if (mappedStatus === 'Partial') {
             if (user) {
               const soTienHoan = ((statusObj.remains || 0) * order.rate) - 1000; // Giả sử 1000 là phí dịch vụ
-              if ((soTienHoan) < 0) return;
+              if ((soTienHoan) < 50) return;
               user.balance = (user.balance || 0) + soTienHoan;
               await user.save();
               const historyData = new HistoryUser({
@@ -143,7 +143,7 @@ async function checkOrderStatus() {
           if (mappedStatus === 'Canceled') {
             if (user) {
               const soTienHoan = ((order.quantity || 0) * order.rate) - 1000; // Giả sử 1000 là phí dịch vụ
-              if ((soTienHoan) < 0) return;
+              if ((soTienHoan) < 50) return;
               user.balance = (user.balance || 0) + soTienHoan;
               await user.save();
               const historyData = new HistoryUser({
@@ -222,7 +222,7 @@ async function checkOrderStatus() {
               if (mappedStatus === 'Partial') {
                 if (user) {
                   const soTienHoan = ((statusObj.remains || 0) * order.rate) - 1000; // Giả sử 1000 là phí dịch vụ
-                  if ((soTienHoan) < 0) return;
+                  if ((soTienHoan) < 50) return;
                   user.balance = (user.balance || 0) + soTienHoan;
                   await user.save();
                   const historyData = new HistoryUser({
@@ -264,7 +264,7 @@ async function checkOrderStatus() {
               if (mappedStatus === 'Canceled') {
                 if (user) {
                   const soTienHoan = ((order.quantity || 0) * order.rate) - 1000; // Giả sử 1000 là phí dịch vụ
-                  if ((soTienHoan) < 0) return;
+                  if ((soTienHoan) < 50) return;
                   user.balance = (user.balance || 0) + soTienHoan;
                   await user.save();
                   const historyData = new HistoryUser({
