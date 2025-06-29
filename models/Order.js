@@ -14,12 +14,10 @@ const orderSchema = new mongoose.Schema({
   quantity: { type: Number, required: false },// số lượng mua 
   rate: { type: Number, required: true },// giá
   totalCost: { type: Number, required: true },// tổng tiền mua
-  createdAt: { type: Date, default: Date.now }, // thời gian mua
   status: { type: String, default: 'Pending' },// trạng thái đơn hàng
   note: { type: String, default: '' },// ghi chú đơn hàng
   ObjectLink : { type: String, default: '' }, // link object
   domain: { type: String, default: null },
-
-});
+}, { timestamps: true }); // Tự động tạo createdAt và updatedAt
 
 module.exports = mongoose.model('Order', orderSchema);

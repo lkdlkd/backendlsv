@@ -174,7 +174,6 @@ async function addOrder(req, res) {
       quantity: qty,
       rate: serviceFromDb.rate,
       totalCost,
-      createdAt,
       status: 'Pending',
       note,
       ObjectLink,
