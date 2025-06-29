@@ -8,6 +8,7 @@ require('@/controllers/tool/RechargeCardController');
 require('@/controllers/tool/RestThang');
 require('@/controllers/tool/laytrangthaicard');
 require('@/controllers/tool/CheckBanKing');
+require('@/controllers/tool/Updatetocdo'); // Đảm bảo import Updatetocdo.js để chạy cronjob cập nhật tốc độ dịch vụ
 const cors = require('cors');
 const api = require('@/routes/api'); // Đường dẫn đúng đến file api.js
 const app = express();

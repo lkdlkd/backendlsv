@@ -11,7 +11,7 @@ const serviceSchema = new mongoose.Schema({
   type: { type: mongoose.Schema.Types.ObjectId, ref: "Platform", required: true },
   description: { type: String, required: false },//mô tả sv
   //server
-  Magoi: { type: String, required: true },// ma goi moi khi thêm
+  Magoi: { type: String, required: true },// ma goi moi khi them
   name: { type: String, required: true },// tăng like tiktok, tăng view titkok
   rate: { type: Number, required: true },//giá lấy bên thứ 3* với smmPartner.price_update,
   maychu: { type: String, required: false },//sv1
@@ -29,17 +29,42 @@ const serviceSchema = new mongoose.Schema({
   domain: { type: String, default: null },
 }, { timestamps: true }); // Thêm createdAt và updatedAt tự động
 
+// Hàm cập nhật tốc độ dự kiến cho tất cả dịch vụ có trong Order
+serviceSchema.statics.updateAllTocDoDuKien = async function () {
+  const svIds = await Order.distinct('SvID');
+  const results = [];
+  for (const svId of svIds) {
+    const tocdo = await this.updateTocDoDuKien(svId);
+    results.push({ SvID: svId, tocdo });
+  }
+  return results;
+};
+
 // Static method: Tính và cập nhật tốc độ dự kiến
 serviceSchema.statics.updateTocDoDuKien = async function (serviceId) {
-  // Lấy 10 đơn hàng gần nhất đã hoàn thành của serviceId
-  const orders = await Order.find({
+  // Lấy tối đa 10 đơn hàng completed, trong vòng 7 ngày gần nhất
+  const sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  let orders = await Order.find({
     SvID: serviceId,
     status: 'Completed',
     dachay: { $gt: 0 },
+    createdAt: { $gte: sinceDate }
   })
     .sort({ updatedAt: -1 })
     .limit(10)
     .lean();
+
+  // Nếu không có đơn nào trong 7 ngày, lấy 10 đơn gần nhất bất kỳ
+  if (!orders.length) {
+    orders = await Order.find({
+      SvID: serviceId,
+      status: 'Completed',
+      dachay: { $gt: 0 }
+    })
+      .sort({ updatedAt: -1 })
+      .limit(10)
+      .lean();
+  }
 
   if (!orders.length) return null;
 

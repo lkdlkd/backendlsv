@@ -190,9 +190,6 @@ async function checkOrderStatus() {
               console.log(`Đã hoàn tiền cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
             }
           }
-          // Cập nhật tốc độ dự kiến cho service
-          const tocdo = await Service.updateTocDoDuKien(order.SvID);
-          console.log(`Tốc độ dự kiến đã được cập nhật cho dịch vụ ${order.SvID}: ${tocdo}`);
           await order.save();
           console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
         } catch (apiError) {
@@ -323,9 +320,6 @@ async function checkOrderStatus() {
                   console.log(`Đã hoàn tiền cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
                 }
               }
-              // Cập nhật tốc độ dự kiến cho service
-              const tocdo = await Service.updateTocDoDuKien(order.SvID);
-              console.log(`Tốc độ dự kiến đã được cập nhật cho dịch vụ ${order.SvID}: ${tocdo}`);
               await order.save();
               console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
             } else {
