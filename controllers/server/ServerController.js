@@ -114,7 +114,7 @@ exports.getServer = async (req, res) => {
       });
     } else {
       // User thường: chỉ lấy các trường cần thiết
-      const services = await Service.find(filter).populate("category", "name path");
+      const services = await Service.find(filter).populate("category", "name path").populate("type", "name logo") // Lấy thông tin của Platform;
 
       const formattedServices = services.map(service => ({
         description: service.description,
@@ -130,7 +130,7 @@ exports.getServer = async (req, res) => {
         rate: service.rate,
         min: service.min,
         max: service.max,
-        type: service.type, // Lấy tên của Category
+        type: service.type ? service.type.name : "không xác định", // Trả về tên của Platform
         category: service.category.name, // Lấy tên của Category
         tocdodukien: service.tocdodukien || "Chưa cập nhật", // Tốc độ dự kiến
         logo: service.type ? service.type.logo : "", // Lấy logo của Platform

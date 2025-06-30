@@ -29,7 +29,12 @@ async function getOrders(req, res) {
   }
 
   try {
-    const orders = await Order.find(filter, '-SvID -orderId')
+    let selectFields = '-SvID -orderId -DomainSmm -lai';
+    if (user.role === 'admin') {
+      selectFields = ''; // admin xem tất cả các trường
+    }
+
+    const orders = await Order.find(filter, selectFields)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -53,7 +58,8 @@ async function getOrders(req, res) {
       error: error.message
     });
   }
-}// Hàm xóa đơn hàng (chỉ admin)
+}
+// Hàm xóa đơn hàng (chỉ admin)
 async function deleteOrder(req, res) {
   const user = req.user;
   if (!user || user.role !== "admin") {
@@ -141,6 +147,7 @@ async function addOrder(req, res) {
     if (serviceFromDb.isActive === false) {
       throw new Error('Dịch vụ bảo trì, vui lòng liên hệ admin');
     }
+    const lai = totalCost - (apiRate * qty);
     // Gửi yêu cầu mua dịch vụ
     const purchasePayload = {
       link,
@@ -178,6 +185,8 @@ async function addOrder(req, res) {
       note,
       ObjectLink,
       comments: formattedComments,
+      DomainSmm: serviceFromDb.DomainSmm,
+      lai : lai,
     });
 
     const HistoryData = new HistoryUser({

@@ -17,6 +17,8 @@ const orderSchema = new mongoose.Schema({
   status: { type: String, default: 'Pending' },// trạng thái đơn hàng
   note: { type: String, default: '' },// ghi chú đơn hàng
   ObjectLink : { type: String, default: '' }, // link object
+  lai : { type: Number, default: 0 }, // lợi nhuận từ đơn hàng
+  DomainSmm: { type: String, default: null }, // tên miền của dịch
   domain: { type: String, default: null },
 }, { timestamps: true }); // Tự động tạo createdAt và updatedAt
 

@@ -31,36 +31,44 @@ const serviceSchema = new mongoose.Schema({
 
 // Hàm cập nhật tốc độ dự kiến cho tất cả dịch vụ có trong Order
 serviceSchema.statics.updateAllTocDoDuKien = async function () {
-  const svIds = await Order.distinct('SvID');
+  // Lấy tất cả cặp SvID + DomainSmm duy nhất trong Order
+  const combos = await Order.aggregate([
+    { $group: { _id: { SvID: "$SvID", DomainSmm: "$DomainSmm" } } }
+  ]);
   const results = [];
-  for (const svId of svIds) {
-    const tocdo = await this.updateTocDoDuKien(svId);
-    results.push({ SvID: svId, tocdo });
+  for (const combo of combos) {
+    const { SvID, DomainSmm } = combo._id;
+    const tocdo = await this.updateTocDoDuKien(SvID, DomainSmm);
+    results.push({ SvID, DomainSmm, tocdo });
   }
   return results;
 };
 
 // Static method: Tính và cập nhật tốc độ dự kiến
-serviceSchema.statics.updateTocDoDuKien = async function (serviceId) {
+serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) {
   // Lấy tối đa 10 đơn hàng completed, trong vòng 7 ngày gần nhất
   const sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  let orders = await Order.find({
+  let orderQuery = {
     SvID: serviceId,
     status: 'Completed',
     dachay: { $gt: 0 },
     createdAt: { $gte: sinceDate }
-  })
+  };
+  if (domainSmm) orderQuery.DomainSmm = domainSmm;
+  let orders = await Order.find(orderQuery)
     .sort({ updatedAt: -1 })
     .limit(10)
     .lean();
 
   // Nếu không có đơn nào trong 7 ngày, lấy 10 đơn gần nhất bất kỳ
   if (!orders.length) {
-    orders = await Order.find({
+    let fallbackQuery = {
       SvID: serviceId,
       status: 'Completed',
       dachay: { $gt: 0 }
-    })
+    };
+    if (domainSmm) fallbackQuery.DomainSmm = domainSmm;
+    orders = await Order.find(fallbackQuery)
       .sort({ updatedAt: -1 })
       .limit(10)
       .lean();
@@ -90,9 +98,10 @@ serviceSchema.statics.updateTocDoDuKien = async function (serviceId) {
   if (minutes > 0 || hours > 0) avgSpeedStr += minutes + 'm ';
   avgSpeedStr += seconds + 's/1000';
 
-  // Cập nhật vào trường tocdodukien
-  await this.updateOne({ serviceId }, { tocdodukien: avgSpeedStr });
-  return avgSpeedStr;
+  // Cập nhật vào trường tocdodukien đúng theo serviceId + DomainSmm nếu có, nếu không thì chỉ theo serviceId
+  const updateQuery = domainSmm ? { serviceId, DomainSmm: domainSmm } : { serviceId };
+  await this.updateOne(updateQuery, { tocdodukien: avgSpeedStr });
+  return avgSpeedStr;F
 };
 
 module.exports = mongoose.model('Service', serviceSchema);
