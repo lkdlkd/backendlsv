@@ -65,18 +65,21 @@ exports.getStatistics = async (req, res) => {
             status: { $in: ["running", "In progress", "Processing", "Pending"] }
         });
 
-        // Tổng doanh thu
+        // Tổng doanh thu (lợi nhuận) theo từng DomainSmm và theo range
         const revenueAgg = await Order.aggregate([
             {
                 $match: {
-                    status: { $in: ["running", "In progress", "Processing", "Pending", "Completed"] }
+                    status: { $in: ["running", "In progress", "Processing", "Pending", "Completed"] },
+                    createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
                 }
             },
             {
-                $group: { _id: null, totalRevenue: { $sum: "$totalCost" } }
+                $group: { _id: "$DomainSmm", totalLai: { $sum: "$lai" } }
             }
         ]);
-        const tongdoanhthu = revenueAgg[0] ? revenueAgg[0].totalRevenue : 0;
+        // Tổng lợi nhuận tất cả DomainSmm trong range
+        console.log("Doanh thu theo DomainSmm:", revenueAgg);
+        const tongdoanhthu = revenueAgg.reduce((sum, item) => sum + (item.totalLai || 0), 0);
 
         // Doanh thu theo range
         const revenueRangeAgg = await Order.aggregate([
@@ -134,6 +137,7 @@ exports.getStatistics = async (req, res) => {
             tongdondangchay,
             tongdanap,
             tongdoanhthu,
+            laiTheoDomain: revenueAgg, // <-- thêm dòng này
             tongnapthang,
             tongnapngay,
             tongdoanhthuhnay,
