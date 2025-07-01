@@ -43,29 +43,26 @@ serviceSchema.statics.updateAllTocDoDuKien = async function () {
   }
   return results;
 };
-
 // Static method: Tính và cập nhật tốc độ dự kiến
 serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) {
-  // Lấy tối đa 10 đơn hàng completed, trong vòng 7 ngày gần nhất
   const sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   let orderQuery = {
     SvID: serviceId,
     status: 'Completed',
-    dachay: { $gte: 1000 }, // lọc đơn nhỏ
-    createdAt: { $gte: sinceDate }
+    createdAt: { $gte: sinceDate },
   };
   if (domainSmm) orderQuery.DomainSmm = domainSmm;
+
   let orders = await Order.find(orderQuery)
     .sort({ updatedAt: -1 })
     .limit(10)
     .lean();
 
-  // Nếu không có đơn nào trong 7 ngày, lấy 10 đơn gần nhất bất kỳ
+  // Nếu không có đơn nào trong 7 ngày, lấy 10 đơn gần nhất
   if (!orders.length) {
     let fallbackQuery = {
       SvID: serviceId,
       status: 'Completed',
-      dachay: { $gte: 1000 }, // lọc đơn nhỏ
     };
     if (domainSmm) fallbackQuery.DomainSmm = domainSmm;
     orders = await Order.find(fallbackQuery)
@@ -76,20 +73,26 @@ serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) 
 
   if (!orders.length) return null;
 
-  // Tính tốc độ từng đơn (ms/1000)
-  const speeds = orders.map(order => {
+  // Tính trung bình trọng số theo dachay
+  let totalWeightedSpeed = 0;
+  let totalDachay = 0;
+
+  for (const order of orders) {
     const timeMs = new Date(order.updatedAt) - new Date(order.createdAt);
     const soLuong = order.dachay || order.quantity || 0;
-    if (soLuong === 0) return null;
-    // Thời gian hoàn thành 1000 đơn vị (giây)
-    return (timeMs / soLuong) * 1000 / 1000; // Đơn vị: giây
-  }).filter(Boolean);
+    if (soLuong === 0) continue;
 
-  if (!speeds.length) return null;
+    const speedPer1000 = (timeMs / soLuong) * 1000 / 1000; // giây/1000
+    totalWeightedSpeed += speedPer1000 * soLuong;
+    totalDachay += soLuong;
+  }
 
-  // Trung bình (giây)
-  const avgSeconds = speeds.reduce((a, b) => a + b, 0) / speeds.length;
-  // Đổi sang h m s
+  if (totalDachay === 0) return null;
+
+  const avgSeconds = totalWeightedSpeed / totalDachay;
+if (isNaN(avgSeconds)) return null; // <-- thêm dòng này
+
+  // Format tốc độ về dạng "Xh Ym Zs/1000"
   const hours = Math.floor(avgSeconds / 3600);
   const minutes = Math.floor((avgSeconds % 3600) / 60);
   const seconds = Math.floor(avgSeconds % 60);
@@ -98,7 +101,7 @@ serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) 
   if (minutes > 0 || hours > 0) avgSpeedStr += minutes + 'm ';
   avgSpeedStr += seconds + 's/1000';
 
-  // Cập nhật vào trường tocdodukien đúng theo serviceId + DomainSmm nếu có, nếu không thì chỉ theo serviceId
+  // Cập nhật vào field `tocdodukien`
   const updateQuery = domainSmm ? { serviceId, DomainSmm: domainSmm } : { serviceId };
   await this.updateOne(updateQuery, { tocdodukien: avgSpeedStr });
   return avgSpeedStr;
