@@ -2,41 +2,88 @@ const moment = require("moment");
 const User = require("../../models/User");
 const Order = require("../../models/Order");
 const Deposit = require("../../models/History");
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Hàm lấy thời gian bắt đầu và kết thúc theo range
+// function getRange(range) {
+//     const now = moment();
+//     let start, end;
+//     switch (range) {
+//         case "today":
+//             start = now.clone().startOf("day");
+//             end = now.clone().endOf("day");
+//             break;
+//         case "yesterday":
+//             start = now.clone().subtract(1, "day").startOf("day");
+//             end = now.clone().subtract(1, "day").endOf("day");
+//             break;
+//         case "this_week":
+//             start = now.clone().startOf("week");
+//             end = now.clone().endOf("week");
+//             break;
+//         case "last_week":
+//             start = now.clone().subtract(1, "week").startOf("week");
+//             end = now.clone().subtract(1, "week").endOf("week");
+//             break;
+//         case "this_month":
+//             start = now.clone().startOf("month");
+//             end = now.clone().endOf("month");
+//             break;
+//         case "last_month":
+//             start = now.clone().subtract(1, "month").startOf("month");
+//             end = now.clone().subtract(1, "month").endOf("month");
+//             break;
+//         default:
+//             start = now.clone().startOf("day");
+//             end = now.clone().endOf("day");
+//     }
+//     return { start: start.toDate(), end: end.toDate() };
+// }
+
+// Chuẩn hoá range: today, yesterday, this_week, last_week, this_month, last_month
 function getRange(range) {
-    const now = moment();
+    const now = dayjs().tz('Asia/Ho_Chi_Minh'); // thời gian hiện tại theo giờ VN
     let start, end;
+
     switch (range) {
         case "today":
-            start = now.clone().startOf("day");
-            end = now.clone().endOf("day");
+            start = now.startOf("day");
+            end = now.endOf("day");
             break;
         case "yesterday":
-            start = now.clone().subtract(1, "day").startOf("day");
-            end = now.clone().subtract(1, "day").endOf("day");
+            start = now.subtract(1, "day").startOf("day");
+            end = now.subtract(1, "day").endOf("day");
             break;
         case "this_week":
-            start = now.clone().startOf("week");
-            end = now.clone().endOf("week");
+            start = now.startOf("week");
+            end = now.endOf("week");
             break;
         case "last_week":
-            start = now.clone().subtract(1, "week").startOf("week");
-            end = now.clone().subtract(1, "week").endOf("week");
+            start = now.subtract(1, "week").startOf("week");
+            end = now.subtract(1, "week").endOf("week");
             break;
         case "this_month":
-            start = now.clone().startOf("month");
-            end = now.clone().endOf("month");
+            start = now.startOf("month");
+            end = now.endOf("month");
             break;
         case "last_month":
-            start = now.clone().subtract(1, "month").startOf("month");
-            end = now.clone().subtract(1, "month").endOf("month");
+            start = now.subtract(1, "month").startOf("month");
+            end = now.subtract(1, "month").endOf("month");
             break;
         default:
-            start = now.clone().startOf("day");
-            end = now.clone().endOf("day");
+            start = now.startOf("day");
+            end = now.endOf("day");
     }
-    return { start: start.toDate(), end: end.toDate() };
+
+    // Trả về UTC để dùng với MongoDB
+    return {
+        start: start.toDate(), // tự động chuyển về UTC khi convert sang Date
+        end: end.toDate()
+    };
 }
 
 exports.getStatistics = async (req, res) => {
@@ -78,7 +125,6 @@ exports.getStatistics = async (req, res) => {
             }
         ]);
         // Tổng lợi nhuận tất cả DomainSmm trong range
-        console.log("Doanh thu theo DomainSmm:", revenueAgg);
         const tongdoanhthu = revenueAgg.reduce((sum, item) => sum + (item.totalLai || 0), 0);
 
         // Doanh thu theo range

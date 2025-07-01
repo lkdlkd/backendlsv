@@ -51,7 +51,7 @@ serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) 
   let orderQuery = {
     SvID: serviceId,
     status: 'Completed',
-    dachay: { $gt: 0 },
+    dachay: { $gte: 1000 }, // lọc đơn nhỏ
     createdAt: { $gte: sinceDate }
   };
   if (domainSmm) orderQuery.DomainSmm = domainSmm;
@@ -65,7 +65,7 @@ serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) 
     let fallbackQuery = {
       SvID: serviceId,
       status: 'Completed',
-      dachay: { $gt: 0 }
+      dachay: { $gte: 1000 }, // lọc đơn nhỏ
     };
     if (domainSmm) fallbackQuery.DomainSmm = domainSmm;
     orders = await Order.find(fallbackQuery)
@@ -101,7 +101,7 @@ serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) 
   // Cập nhật vào trường tocdodukien đúng theo serviceId + DomainSmm nếu có, nếu không thì chỉ theo serviceId
   const updateQuery = domainSmm ? { serviceId, DomainSmm: domainSmm } : { serviceId };
   await this.updateOne(updateQuery, { tocdodukien: avgSpeedStr });
-  return avgSpeedStr;F
+  return avgSpeedStr;
 };
 
 module.exports = mongoose.model('Service', serviceSchema);
