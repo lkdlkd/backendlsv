@@ -158,7 +158,7 @@ async function addOrder(req, res) {
     const purchaseResponse = await smm.order(purchasePayload);
     console.log(purchaseResponse);
     if (!purchaseResponse || !purchaseResponse.order) {
-      throw new Error(purchaseResponse.error || 'Lỗi khi mua dịch vụ, vui lòng ib admin');
+      throw new Error('Lỗi khi mua dịch vụ, vui lòng ib admin');
     }
     // Cập nhật số dư và lưu đơn hàng
     const newBalance = user.balance - totalCost;
