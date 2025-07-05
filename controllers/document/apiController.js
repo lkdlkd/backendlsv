@@ -291,12 +291,11 @@ exports.getOrderStatus = async (req, res) => {
             orderDocs.forEach(order => {
                 if (order.username === user.username) {
                     formattedOrders[order.Madon] = {
-                        charge: order.totalCost,
+                        charge: order.totalCost / 25000,
                         start_count: order.start,
                         status: order.status,
                         remains: order.quantity - order.dachay,
                         note: order.note || "",
-                        currency: "VND"
                     };
                 }
                 else {
@@ -313,12 +312,11 @@ exports.getOrderStatus = async (req, res) => {
             let formattedOrder;
             if (firstOrder.username === user.username) {
                 formattedOrder = {
-                    charge: firstOrder.totalCost,
+                    charge: firstOrder.totalCost / 25000,
                     start_count: firstOrder.start,
                     status: firstOrder.status,
                     remains: firstOrder.quantity - firstOrder.dachay,
                     note: firstOrder.note || "",
-                    currency: "VND"
                 };
             } else {
                 formattedOrder = { order: firstOrder.Madon, error: "Incorrect order ID" };
