@@ -3,6 +3,7 @@ const User = require("../../models/User");
 const HistoryUser = require("../../models/History");
 const axios = require("axios");
 const crypto = require("crypto");
+const Telegram = require('../../models/Telegram');
 
 exports.login = async (req, res) => {
   try {
@@ -86,18 +87,16 @@ exports.register = async (req, res) => {
 
 
     // **Thông báo qua Telegram**
-    const taoluc = new Date();
-    const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-    const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-    if (telegramBotToken && telegramChatId) {
+    const teleConfig = await Telegram.findOne();
+    if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+      const taoluc = new Date();
       const telegramMessage =
         `📌 *Có khách mới được tạo!*\n\n` +
         `👤 *Khách hàng:* ${username}\n` +
         `🔹 *Tạo lúc:* ${taoluc.toLocaleString()}\n`;
-
       try {
-        await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-          chat_id: telegramChatId,
+        await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+          chat_id: teleConfig.chatId,
           text: telegramMessage,
           parse_mode: "Markdown",
         });
@@ -226,25 +225,24 @@ exports.addBalance = async (req, res) => {
     await historyDataa.save();
     const taoluc = new Date();
 
-    const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-    const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-    if (telegramBotToken && telegramChatId) {
+    // Sử dụng cấu hình Telegram trong DB
+    const teleConfig = await Telegram.findOne();
+    if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
       const telegramMessage =
         `📌 *Cộng tiền!*\n\n` +
         `👤 *Khách hàng:* ${updatedUser.username}\n` +
         `👤 *Cộng tiền:*  Admin đã cộng thành công số tiền ${amount}.\n` +
         `🔹 *Tạo lúc:* ${taoluc.toLocaleString()}\n`;
       try {
-        await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-          chat_id: telegramChatId,
+        await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+          chat_id: teleConfig.chatId,
           text: telegramMessage,
+          parse_mode: "Markdown",
         });
         console.log("Thông báo Telegram đã được gửi.");
       } catch (telegramError) {
         console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
       }
-    } else {
-      console.log("Thiếu thông tin cấu hình Telegram.");
     }
     res.status(200).json({ message: "Cộng tiền thành công" });
   } catch (error) {
@@ -303,17 +301,16 @@ exports.deductBalance = async (req, res) => {
 
     // Gửi thông báo qua Telegram (nếu cấu hình có đủ)
     const taoluc = new Date();
-    const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-    const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-    if (telegramBotToken && telegramChatId) {
+    const teleConfig = await Telegram.findOne();
+    if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
       const telegramMessage =
         `📌 *Trừ tiền!*\n\n` +
         `👤 *Khách hàng:* ${updatedUser.username}\n` +
         `💸 *Số tiền trừ:* Admin đã trừ thành công số tiền ${amount}.\n` +
         `🔹 *Tạo lúc:* ${taoluc.toLocaleString()}\n`;
       try {
-        await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-          chat_id: telegramChatId,
+        await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+          chat_id: teleConfig.chatId,
           text: telegramMessage,
           parse_mode: "Markdown",
         });
@@ -321,8 +318,6 @@ exports.deductBalance = async (req, res) => {
       } catch (telegramError) {
         console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
       }
-    } else {
-      console.log("Thiếu thông tin cấu hình Telegram.");
     }
 
     return res.status(200).json({ message: "Trừ tiền thành công" });

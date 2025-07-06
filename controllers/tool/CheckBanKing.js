@@ -5,6 +5,7 @@ const Transaction = require('../../models/TransactionBanking');
 const User = require('../../models/User');
 const Promotion = require('../../models/Promotion');
 const HistoryUser = require('../../models/History');
+const Telegram = require('../../models/Telegram');
 
 // Hàm tạo URL API tương ứng với loại ngân hàng
 function getBankApiUrl(bank) {
@@ -162,11 +163,10 @@ cron.schedule('*/30 * * * * *', async () => {
                             await historyData.save();
                             await user.save();
                             // **Thông báo qua Telegram**
-                            const taoluc = new Date();
-                            const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-                            const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-
-                            if (telegramBotToken && telegramChatId) {
+                            // Lấy cấu hình Telegram từ DB
+                            const taoluc = new Date(); // Lấy thời gian hiện tại
+                            const teleConfig = await Telegram.findOne();
+                            if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                                 const telegramMessage =
                                     `📌 *NẠP TIỀN THÀNH CÔNG!*\n\n` +
                                     `📌 *Trans_id : * ${trans.transactionID || "khong co"}\n` +
@@ -174,10 +174,11 @@ cron.schedule('*/30 * * * * *', async () => {
                                     `💰 *Số tiền nạp:* ${amount}\n` +
                                     `🎁 *Khuyến mãi:* ${bonus}\n` +
                                     `🔹 *Tổng cộng:* ${totalAmount}\n` +
+                                    `🔹 *Số dư:* ${user.balance}\n` +
                                     `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
                                 try {
-                                    await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-                                        chat_id: telegramChatId,
+                                    await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                                        chat_id: teleConfig.chatId,
                                         text: telegramMessage,
                                         parse_mode: "Markdown",
                                     });

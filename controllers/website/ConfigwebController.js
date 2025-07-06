@@ -34,6 +34,10 @@ exports.getConfigweb = async (req, res) => {
 // Cập nhật cấu hình website
 exports.updateConfigweb = async (req, res) => {
   try {
+    const user = req.user;
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Chỉ admin mới có quyền truy cập' });
+    }
     const { tieude, title, logo, favicon, lienhe, cuphap } = req.body;
 
     // Tìm cấu hình hiện tại
@@ -55,7 +59,7 @@ exports.updateConfigweb = async (req, res) => {
     config.favicon = favicon !== undefined ? favicon : "";
     config.lienhe = lienhe !== undefined ? lienhe : [];
     config.cuphap = cuphap !== undefined && cuphap.trim() !== "" ? cuphap : config.cuphap || "naptien"; // Kiểm tra giá trị trống cho cuphap
-    
+
     await config.save();
 
     res.status(200).json({ success: true, message: "Cấu hình website được cập nhật thành công", data: config });

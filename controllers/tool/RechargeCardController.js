@@ -6,6 +6,7 @@ const axios = require("axios");
 const FormData = require("form-data");
 const cardModel = require("../../models/Card");
 const ConfigCard = require("../../models/ConfigCard"); // Import mô hình ConfigCard
+const Telegram = require('../../models/Telegram');
 
 /**
  * Controller cập nhật trạng thái thẻ cào
@@ -111,19 +112,17 @@ exports.rechargeCardStatus = async () => {
                         userData.tongnapthang = (userData.tongnapthang || 0) + chietkhau;
                         userData.tongnap = (userData.tongnap || 0) + chietkhau;
                         await userData.save();
-
                         // Gửi thông báo Telegram nếu có cấu hình
-                        const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-                        const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-                        if (telegramBotToken && telegramChatId) {
+                        const teleConfig = await Telegram.findOne();
+                        if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                             const telegramMessage =
                                 `📌 *NẠP TIỀN!*\n\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
                                 `👤 *Cộng tiền:* nạp thẻ thành công số tiền ${chietkhau}.\n` +
                                 `🔹 *Tạo lúc:* ${new Date().toLocaleString()}\n`;
                             try {
-                                await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-                                    chat_id: telegramChatId,
+                                await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                                    chat_id: teleConfig.chatId,
                                     text: telegramMessage,
                                 });
                                 console.log('Thông báo Telegram đã được gửi.');
@@ -168,16 +167,15 @@ exports.rechargeCardStatus = async () => {
                         await userData.save();
 
                         // Gửi thông báo Telegram nếu có cấu hình
-                        const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-                        const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-                        if (telegramBotToken && telegramChatId) {
+                        const teleConfig = await Telegram.findOne();
+                        if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                             const telegramMessage = `📌 *Cộng tiền!*\n\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
                                 `👤 *Cộng tiền:*  nạp thẻ thành công số tiền  ${chietkhau2} và sai mệnh giá.\n` +
                                 `🔹 *Tạo lúc:* ${new Date().toLocaleString()}\n`;
                             try {
-                                await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-                                    chat_id: telegramChatId,
+                                await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                                    chat_id: teleConfig.chatId,
                                     text: telegramMessage,
                                 });
                                 console.log('Thông báo Telegram đã được gửi.');

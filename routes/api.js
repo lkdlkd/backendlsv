@@ -80,6 +80,12 @@ router.put("/configweb", authenticate.authenticateAdmin, configwebController.upd
 // Config card routes
 router.get("/config-card", authenticate.authenticateAdmin, configCardController.getConfigCard); // Lấy cấu hình thẻ nạp
 router.put("/config-card", authenticate.authenticateAdmin, configCardController.updateConfigCard); // Cập nhật cấu hình thẻ nạp
+const configTeleController = require('../controllers/website/configTeleController');
+
+// Lấy cấu hình Telegram
+router.get('/configtele', authenticate.authenticateAdmin, configTeleController.getTelegramConfig);
+// Cập nhật cấu hình Telegram
+router.put('/configtele',authenticate.authenticateAdmin, configTeleController.updateTelegramConfig);
 
 // Route để lấy số dư từ SMM
 router.get('/getbalance/:id', authenticate.authenticateAdmin, SmmController.getBalance);

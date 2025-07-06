@@ -6,6 +6,7 @@ const HistoryUser = require('../../models/History');
 const User = require('../../models/User');
 const SmmSv = require("../../models/SmmSv");
 const SmmApiService = require('../Smm/smmServices'); // Giả sử bạn có một lớp để xử lý API SMM
+const Telegram = require('../../models/Telegram');
 
 /* Hàm lấy danh sách dịch vụ */
 exports.getServices = async (req, res) => {
@@ -202,23 +203,26 @@ exports.AddOrder = async (req, res) => {
         console.log('Order saved successfully!');
 
         // --- Bước 8: Gửi thông báo về Telegram ---
-        const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n\n` +
-            `👤 *Khách hàng:* ${username}\n` +
-            `🔹 *Dịch vụ:* ${serviceFromDb.name}\n` +
-            `🔗 *Link:* ${link}\n` +
-            `📌 *Số lượng:* ${qty}\n` +
-            `💰 *Tiền cũ:* ${(user.balance + totalCost).toLocaleString()} VNĐ\n` +
-            `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
-            `💰 *TIền còn lại:* ${newBalance.toLocaleString()} VNĐ\n` +
-            `🆔 *Mã đơn:* ${newMadon}\n` +
-            `📆 *Ngày tạo:* ${createdAt.toLocaleString()}\n` +
-            `📝 *Ghi chú:* ${'Không có'}`;
-
-        await sendTelegramNotification({
-            telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
-            telegramChatId: process.env.TELEGRAM_CHAT_ID,
-            message: telegramMessage,
-        });
+        // Lấy cấu hình Telegram từ DB
+        const teleConfig = await Telegram.findOne();
+        if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+            const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n\n` +
+                `👤 *Khách hàng:* ${username}\n` +
+                `🔹 *Dịch vụ:* ${serviceFromDb.name}\n` +
+                `🔗 *Link:* ${link}\n` +
+                `📌 *Số lượng:* ${qty}\n` +
+                `💰 *Tiền cũ:* ${(user.balance + totalCost).toLocaleString()} VNĐ\n` +
+                `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
+                `💰 *TIền còn lại:* ${newBalance.toLocaleString()} VNĐ\n` +
+                `🆔 *Mã đơn:* ${newMadon}\n` +
+                `📆 *Ngày tạo:* ${createdAt.toLocaleString()}\n` +
+                `📝 *Ghi chú:* ${'Không có'}`;
+            await sendTelegramNotification({
+                telegramBotToken: teleConfig.botToken,
+                telegramChatId: teleConfig.chatId,
+                message: telegramMessage,
+            });
+        }
         res.status(200).json({ order: newMadon });
     } catch (error) {
         console.error(error);

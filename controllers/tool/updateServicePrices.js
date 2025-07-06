@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const axios = require('axios');
 const Service = require('../../models/server');
 const SmmSv = require('../../models/SmmSv');
+const Telegram = require('../../models/Telegram');
 
 // Hàm kiểm tra và cập nhật giá dịch vụ
 async function updateServicePrices() {
@@ -69,9 +70,8 @@ async function updateServicePrices() {
               console.log(`Đã cập nhật giá của ${serviceItem.name} thành ${newRate}`);
 
               // Gửi thông báo Telegram nếu có cấu hình
-              const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-              const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-              if (telegramBotToken && telegramChatId) {
+              const teleConfig = await Telegram.findOne();
+              if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                 const telegramMessage = `📌 *Cập nhật giá!*\n\n` +
                   `👤 *Dịch vụ:* ${serviceItem.name}\n` +
                   `🔹 *Giá cũ:* ${oldRate}\n` +
@@ -79,17 +79,15 @@ async function updateServicePrices() {
                   `🔹 *Site:* ${smmSvConfig.name}\n` +
                   `🔹 *Thời gian:* ${new Date().toLocaleString()}\n`;
                 try {
-                  await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-                    chat_id: telegramChatId,
+                  await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                    chat_id: teleConfig.chatId,
                     text: telegramMessage,
                   });
                   console.log('Thông báo Telegram đã được gửi.');
                 } catch (telegramError) {
                   console.error('Lỗi gửi thông báo Telegram:', telegramError.message);
                 }
-              } else {
-                console.log('Thiếu thông tin cấu hình Telegram.');
-              }
+              } 
             } else {
               console.log(`Giá của ${serviceItem.name} đã bằng hoặc cao hơn giá API, bỏ qua cập nhật.`);
             }

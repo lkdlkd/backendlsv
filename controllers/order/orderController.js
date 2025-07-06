@@ -4,6 +4,7 @@ const Order = require('../../models/Order');
 const HistoryUser = require('../../models/History');
 const SmmSv = require("../../models/SmmSv");
 const SmmApiService = require('../Smm/smmServices'); // hoặc đường dẫn tương ứng
+const Telegram = require('../../models/Telegram');
 
 // Lấy đơn hàng theo category, user, và từ khóa tìm kiếm (phân trang)
 async function getOrders(req, res) {
@@ -117,7 +118,7 @@ async function addOrder(req, res) {
     const username = user.username;
 
     // Lấy thông tin từ body
-    const { link, category, quantity, magoi, note, comments ,ObjectLink } = req.body;
+    const { link, category, quantity, magoi, note, comments, ObjectLink } = req.body;
     const qty = Number(quantity);
     const formattedComments = comments ? comments.replace(/\r?\n/g, "\r\n") : "";
 
@@ -186,7 +187,7 @@ async function addOrder(req, res) {
       ObjectLink,
       comments: formattedComments,
       DomainSmm: serviceFromDb.DomainSmm,
-      lai : lai,
+      lai: lai,
     });
 
     const HistoryData = new HistoryUser({
@@ -204,23 +205,26 @@ async function addOrder(req, res) {
     await orderData.save();
     await HistoryData.save();
 
-    // Gửi thông báo Telegram
-    const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n\n` +
-      `👤 *Khách hàng:* ${username}\n` +
-      `🔹 *Dịch vụ:* ${serviceFromDb.maychu} ${serviceFromDb.name}\n` +
-      `🔗 *Link:* ${link}\n` +
-      `📌 *Số lượng:* ${qty}\n` +
-      `💰 *TIền cũ:* ${(user.balance + totalCost).toLocaleString()} VNĐ\n` +
-      `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
-      `💰 *TIền còn lại:* ${newBalance.toLocaleString()} VNĐ\n` +
-      `🆔 *Mã đơn:* ${newMadon}\n` +
-      `📆 *Ngày tạo:* ${createdAt.toLocaleString()}\n` +
-      `📝 *Ghi chú:* ${note || 'Không có'}`;
-    await sendTelegramNotification({
-      telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
-      telegramChatId: process.env.TELEGRAM_CHAT_ID,
-      message: telegramMessage,
-    });
+    // Gửi thông báo Telegram nếu có cấu hình
+    const teleConfig = await Telegram.findOne();
+    if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+      const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n\n` +
+        `👤 *Khách hàng:* ${username}\n` +
+        `🔹 *Dịch vụ:* ${serviceFromDb.maychu} ${serviceFromDb.name}\n` +
+        `🔗 *Link:* ${link}\n` +
+        `📌 *Số lượng:* ${qty}\n` +
+        `💰 *TIền cũ:* ${(user.balance + totalCost).toLocaleString()} VNĐ\n` +
+        `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
+        `💰 *Tiền còn lại:* ${newBalance.toLocaleString()} VNĐ\n` +
+        `🆔 *Mã đơn:* ${newMadon}\n` +
+        `📆 *Ngày tạo:* ${createdAt.toLocaleString()}\n` +
+        `📝 *Ghi chú:* ${note || 'Không có'}`;
+      await sendTelegramNotification({
+        telegramBotToken: teleConfig.botToken,
+        telegramChatId: teleConfig.chatId,
+        message: telegramMessage,
+      });
+    }
 
     res.status(200).json({ message: 'Mua dịch vụ thành công' });
   } catch (error) {

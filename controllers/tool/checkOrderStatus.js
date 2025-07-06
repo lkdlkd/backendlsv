@@ -6,6 +6,7 @@ const SmmApiService = require('../Smm/smmServices');
 const User = require('../../models/User'); // Thêm dòng này ở đầu file để import model User
 const HistoryUser = require('../../models/History');
 const axios = require('axios');
+const Telegram = require('../../models/Telegram');
 
 function mapStatus(apiStatus) {
   switch (apiStatus) {
@@ -119,10 +120,13 @@ async function checkOrderStatus() {
                 createdAt: new Date(),
                 mota: `Hệ thống hoàn cho bạn ${soTienHoan} dịch vụ tương đương với ${statusObj.remains} cho uid ${order.link} và 1000 phí dịch vụ`,
               });
+              await historyData.save();
+              console.log(`Đã hoàn tiền cho user ${user.username} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
+
               const taoluc = new Date();
-              const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-              const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-              if (telegramBotToken && telegramChatId) {
+              // Gửi thông báo Telegram nếu có cấu hình
+              const teleConfig = await Telegram.findOne();
+              if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                 const telegramMessage =
                   `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                   `👤 *Khách hàng:* ${order.username}\n` +
@@ -130,8 +134,8 @@ async function checkOrderStatus() {
                   `🔹 *Tướng ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
                   `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
                 try {
-                  await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-                    chat_id: telegramChatId,
+                  await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                    chat_id: teleConfig.chatId,
                     text: telegramMessage,
                     parse_mode: "Markdown",
                   });
@@ -140,8 +144,6 @@ async function checkOrderStatus() {
                   console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
                 }
               }
-              await historyData.save();
-              console.log(`Đã hoàn tiền cho user ${user.username} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
             }
           }
           if (mappedStatus === 'Canceled') {
@@ -165,10 +167,12 @@ async function checkOrderStatus() {
                 createdAt: new Date(),
                 mota: `Hệ thống hoàn cho bạn ${soTienHoan} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và 1000 phí dịch vụ`,
               });
+              await historyData.save();
+              console.log(`Đã hoàn tiền cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
               const taoluc = new Date();
-              const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-              const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-              if (telegramBotToken && telegramChatId) {
+              // Gửi thông báo Telegram nếu có cấu hình
+              const teleConfig = await Telegram.findOne();
+              if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                 const telegramMessage =
                   `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                   `👤 *Khách hàng:* ${order.username}\n` +
@@ -176,8 +180,8 @@ async function checkOrderStatus() {
                   `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
                   `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
                 try {
-                  await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-                    chat_id: telegramChatId,
+                  await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                    chat_id: teleConfig.chatId,
                     text: telegramMessage,
                     parse_mode: "Markdown",
                   });
@@ -186,8 +190,6 @@ async function checkOrderStatus() {
                   console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
                 }
               }
-              await historyData.save();
-              console.log(`Đã hoàn tiền cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
             }
           }
           await order.save();
@@ -249,10 +251,12 @@ async function checkOrderStatus() {
                     createdAt: new Date(),
                     mota: `Hệ thống hoàn cho bạn ${soTienHoan} dịch vụ tương đương với ${statusObj.remains} cho uid ${order.link} và 1000 phí dịch vụ`,
                   });
+                  await historyData.save();
+                  console.log(`Đã hoàn tiền cho user ${user.username} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
                   const taoluc = new Date();
-                  const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-                  const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-                  if (telegramBotToken && telegramChatId) {
+                  // Gửi thông báo Telegram nếu có cấu hình
+                  const teleConfig = await Telegram.findOne();
+                  if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                     const telegramMessage =
                       `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                       `👤 *Khách hàng:* ${order.username}\n` +
@@ -260,8 +264,8 @@ async function checkOrderStatus() {
                       `🔹 *Tướng ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
                       `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
                     try {
-                      await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-                        chat_id: telegramChatId,
+                      await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                        chat_id: teleConfig.chatId,
                         text: telegramMessage,
                         parse_mode: "Markdown",
                       });
@@ -270,8 +274,6 @@ async function checkOrderStatus() {
                       console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
                     }
                   }
-                  await historyData.save();
-                  console.log(`Đã hoàn tiền cho user ${user.username} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
                 }
               }
               if (mappedStatus === 'Canceled') {
@@ -295,10 +297,12 @@ async function checkOrderStatus() {
                     createdAt: new Date(),
                     mota: `Hệ thống hoàn cho bạn ${soTienHoan} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và 1000 phí dịch vụ`,
                   });
+                  await historyData.save();
+                  console.log(`Đã hoàn tiền cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
                   const taoluc = new Date();
-                  const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-                  const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-                  if (telegramBotToken && telegramChatId) {
+                  // Gửi thông báo Telegram nếu có cấu hình
+                  const teleConfig = await Telegram.findOne();
+                  if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                     const telegramMessage =
                       `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                       `👤 *Khách hàng:* ${order.username}\n` +
@@ -306,8 +310,8 @@ async function checkOrderStatus() {
                       `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
                       `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
                     try {
-                      await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-                        chat_id: telegramChatId,
+                      await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                        chat_id: teleConfig.chatId,
                         text: telegramMessage,
                         parse_mode: "Markdown",
                       });
@@ -316,8 +320,6 @@ async function checkOrderStatus() {
                       console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
                     }
                   }
-                  await historyData.save();
-                  console.log(`Đã hoàn tiền cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
                 }
               }
               await order.save();

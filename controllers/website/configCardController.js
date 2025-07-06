@@ -3,6 +3,10 @@ const ConfigCard = require("../../models/ConfigCard");
 // Lấy cấu hình thẻ nạp
 exports.getConfigCard = async (req, res) => {
   try {
+    const user = req.user;
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Chỉ admin mới có quyền truy cập' });
+    }
     let config = await ConfigCard.findOne();
 
     // Nếu chưa có cấu hình, trả về dữ liệu rỗng
@@ -24,6 +28,10 @@ exports.getConfigCard = async (req, res) => {
 // Cập nhật cấu hình thẻ nạp
 exports.updateConfigCard = async (req, res) => {
   try {
+    const user = req.user;
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Chỉ admin mới có quyền truy cập' });
+    }
     const { API_URLCARD, PARTNER_ID, PARTNER_KEY } = req.body;
 
     let config = await ConfigCard.findOne();
