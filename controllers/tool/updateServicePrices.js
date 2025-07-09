@@ -71,14 +71,14 @@ async function updateServicePrices() {
 
               // Gửi thông báo Telegram nếu có cấu hình
               const teleConfig = await Telegram.findOne();
-              const taoluc = new Date();
+              const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
               if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                 const telegramMessage = `📌 *Cập nhật giá!*\n\n` +
                   `👤 *Dịch vụ:* ${serviceItem.name}\n` +
                   `🔹 *Giá cũ:* ${oldRate}\n` +
                   `🔹 *Giá mới:* ${newRate}\n` +
                   `🔹 *Site:* ${smmSvConfig.name}\n` +
-                  `🔹 *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                  `🔹 *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",

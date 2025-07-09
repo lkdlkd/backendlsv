@@ -206,6 +206,8 @@ exports.AddOrder = async (req, res) => {
         // Lấy cấu hình Telegram từ DB
         const teleConfig = await Telegram.findOne();
         if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+            // Giờ Việt Nam (UTC+7)
+            const createdAtVN = new Date(createdAt.getTime() + 7 * 60 * 60 * 1000);
             const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n\n` +
                 `👤 *Khách hàng:* ${username}\n` +
                 `🔹 *Dịch vụ:* ${serviceFromDb.name}\n` +
@@ -215,7 +217,7 @@ exports.AddOrder = async (req, res) => {
                 `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
                 `💰 *TIền còn lại:* ${newBalance.toLocaleString()} VNĐ\n` +
                 `🆔 *Mã đơn:* ${newMadon}\n` +
-                `📆 *Ngày tạo:* ${new Date(createdAt).toLocaleString("vi-VN", {
+                `📆 *Ngày tạo:* ${createdAtVN.toLocaleString("vi-VN", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",

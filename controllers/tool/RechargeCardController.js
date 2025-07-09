@@ -114,13 +114,13 @@ exports.rechargeCardStatus = async () => {
                         await userData.save();
                         // Gửi thông báo Telegram nếu có cấu hình
                         const teleConfig = await Telegram.findOne();
-                        const taoluc = new Date();
+                        const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
                         if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                             const telegramMessage =
                                 `📌 *NẠP TIỀN!*\n\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
                                 `👤 *Cộng tiền:* nạp thẻ thành công số tiền ${chietkhau}.\n` +
-                                `🔹 *Tạo lúc:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                                `🔹 *Tạo lúc:* ${taoluc.toLocaleString("vi-VN", {
                                     day: "2-digit",
                                     month: "2-digit",
                                     year: "numeric",
@@ -176,12 +176,12 @@ exports.rechargeCardStatus = async () => {
 
                         // Gửi thông báo Telegram nếu có cấu hình
                         const teleConfig = await Telegram.findOne();
-                        const taoluc = new Date();
+                        const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
                         if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                             const telegramMessage = `📌 *Cộng tiền!*\n\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
                                 `👤 *Cộng tiền:*  nạp thẻ thành công số tiền  ${chietkhau2} và sai mệnh giá.\n` +
-                                `🔹 *Tạo lúc:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                                `🔹 *Tạo lúc:* ${taoluc.toLocaleString("vi-VN", {
                                     day: "2-digit",
                                     month: "2-digit",
                                     year: "numeric",

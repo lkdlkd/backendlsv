@@ -124,7 +124,7 @@ async function checkOrderStatus() {
               await historyData.save();
               console.log(`Đã hoàn tiền cho user ${user.username} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
 
-              const taoluc = new Date();
+              const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
               // Gửi thông báo Telegram nếu có cấu hình
               const teleConfig = await Telegram.findOne();
               if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
@@ -133,7 +133,7 @@ async function checkOrderStatus() {
                   `👤 *Khách hàng:* ${order.username}\n` +
                   `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
                   `🔹 *Tướng ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
-                  `⏰ *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                  `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
@@ -178,7 +178,7 @@ async function checkOrderStatus() {
               });
               await historyData.save();
               console.log(`Đã hoàn tiền cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
-              const taoluc = new Date();
+              const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
               // Gửi thông báo Telegram nếu có cấu hình
               const teleConfig = await Telegram.findOne();
               if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
@@ -187,7 +187,7 @@ async function checkOrderStatus() {
                   `👤 *Khách hàng:* ${order.username}\n` +
                   `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
                   `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
-                  `⏰ *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                  `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
@@ -270,7 +270,7 @@ async function checkOrderStatus() {
                   });
                   await historyData.save();
                   console.log(`Đã hoàn tiền cho user ${user.username} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
-                  const taoluc = new Date();
+                  const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
                   // Gửi thông báo Telegram nếu có cấu hình
                   const teleConfig = await Telegram.findOne();
                   if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
@@ -279,7 +279,7 @@ async function checkOrderStatus() {
                       `👤 *Khách hàng:* ${order.username}\n` +
                       `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
                       `🔹 *Tướng ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
-                      `⏰ *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                      `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
@@ -324,7 +324,7 @@ async function checkOrderStatus() {
                   });
                   await historyData.save();
                   console.log(`Đã hoàn tiền cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
-                  const taoluc = new Date();
+                  const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
                   // Gửi thông báo Telegram nếu có cấu hình
                   const teleConfig = await Telegram.findOne();
                   if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
@@ -333,7 +333,7 @@ async function checkOrderStatus() {
                       `👤 *Khách hàng:* ${order.username}\n` +
                       `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
                       `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
-                      `⏰ *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                      `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",

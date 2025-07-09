@@ -164,7 +164,7 @@ cron.schedule('*/30 * * * * *', async () => {
                             await user.save();
                             // **Thông báo qua Telegram**
                             // Lấy cấu hình Telegram từ DB
-                            const taoluc = new Date(); // Lấy thời gian hiện tại
+                            const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
                             const teleConfig = await Telegram.findOne();
                             if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                                 const telegramMessage =
@@ -175,7 +175,7 @@ cron.schedule('*/30 * * * * *', async () => {
                                     `🎁 *Khuyến mãi:* ${bonus}\n` +
                                     `🔹 *Tổng cộng:* ${totalAmount}\n` +
                                     `🔹 *Số dư:* ${user.balance.toLocaleString()} VNĐ\n` +
-                                    `⏰ *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                                    `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                                         day: "2-digit",
                                         month: "2-digit",
                                         year: "numeric",

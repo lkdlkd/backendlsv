@@ -208,6 +208,8 @@ async function addOrder(req, res) {
     // Gửi thông báo Telegram nếu có cấu hình
     const teleConfig = await Telegram.findOne();
     if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+      // Giờ Việt Nam (UTC+7)
+      const createdAtVN = new Date(createdAt.getTime() + 7 * 60 * 60 * 1000);
       const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n\n` +
         `👤 *Khách hàng:* ${username}\n` +
         `🔹 *Dịch vụ:* ${serviceFromDb.maychu} ${serviceFromDb.name}\n` +
@@ -217,7 +219,7 @@ async function addOrder(req, res) {
         `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
         `💰 *Tiền còn lại:* ${newBalance.toLocaleString()} VNĐ\n` +
         `🆔 *Mã đơn:* ${newMadon}\n` +
-        `📆 *Ngày tạo:* ${new Date(createdAt).toLocaleString("vi-VN", {
+        `📆 *Ngày tạo:* ${createdAtVN.toLocaleString("vi-VN", {
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
