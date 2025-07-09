@@ -54,26 +54,21 @@ async function updateServicePrices() {
             }
             const apiRate = apiService.rate * smmSvConfig.tigia;
             const dbRate = serviceItem.rate;
-            serviceItem.isActive = true;
-            serviceItem.originalRate = apiRate;
-            await serviceItem.save();
-            console.log(
-              `Dịch vụ ${serviceItem.name} - id ${serviceItem.serviceId} - Giá DB: ${dbRate}, Giá API: ${apiRate}`
-            );
-            // Nếu giá trong CSDL thấp hơn giá API thì cập nhật
+            console.log(`Kiểm tra dịch vụ: ${serviceItem.name} - Giá API: ${apiRate}, Giá CSDL: ${dbRate}`);
+            // So sánh và cập nhật giá
             if (dbRate < apiRate) {
               let newRate = apiRate * 1.1; // cập nhật với 10% tăng thêm
-              newRate = Math.round(newRate * 10000) / 10000; // Làm tròn 2 chữ số thập phân
+              newRate = Math.round(newRate * 10000) / 10000; // Làm tròn 4 chữ số thập phân
               const oldRate = serviceItem.rate;
               serviceItem.rate = newRate;
               await serviceItem.save();
               console.log(`Đã cập nhật giá của ${serviceItem.name} thành ${newRate}`);
 
-              // Gửi thông báo Telegram nếu có cấu hình
+              // Gửi thông báo Telegram nếu có cấu hình (TĂNG GIÁ)
               const teleConfig = await Telegram.findOne();
               const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
               if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
-                const telegramMessage = `📌 *Cập nhật giá!*\n\n` +
+                const telegramMessage = `📌 *Cập nhật giá TĂNG!*\n\n` +
                   `👤 *Dịch vụ:* ${serviceItem.name}\n` +
                   `🔹 *Giá cũ:* ${oldRate}\n` +
                   `🔹 *Giá mới:* ${newRate}\n` +
@@ -96,7 +91,57 @@ async function updateServicePrices() {
                   console.error('Lỗi gửi thông báo Telegram:', telegramError.message);
                 }
               }
+              // Sau khi tăng giá, cập nhật lại originalRate
+              serviceItem.originalRate = apiRate;
+              await serviceItem.save();
+            } else if (
+              typeof serviceItem.originalRate === 'number' &&
+              apiRate < serviceItem.originalRate &&
+              smmSvConfig.update_price === "on"
+            ) {
+              let newRate = apiRate * 1.1;
+              newRate = Math.round(newRate * 10000) / 10000;
+              const oldRate = serviceItem.rate;
+              serviceItem.rate = newRate;
+              await serviceItem.save();
+              console.log(`Đã giảm giá của ${serviceItem.name} thành ${newRate}`);
+
+              // Gửi thông báo Telegram nếu có cấu hình (GIẢM GIÁ)
+              const teleConfig = await Telegram.findOne();
+              const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
+              if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+                const telegramMessage = `📌 *Cập nhật giá GIẢM!*\n\n` +
+                  `👤 *Dịch vụ:* ${serviceItem.name}\n` +
+                  `🔹 *Giá cũ:* ${oldRate}\n` +
+                  `🔹 *Giá mới:* ${newRate}\n` +
+                  `🔹 *Site:* ${smmSvConfig.name}\n` +
+                  `🔹 *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  })}\n`;
+                try {
+                  await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                    chat_id: teleConfig.chatId,
+                    text: telegramMessage,
+                  });
+                  console.log('Thông báo Telegram đã được gửi.');
+                } catch (telegramError) {
+                  console.error('Lỗi gửi thông báo Telegram:', telegramError.message);
+                }
+              }
+              // Sau khi giảm giá, cập nhật lại originalRate
+              serviceItem.originalRate = apiRate;
+              await serviceItem.save();
             } else {
+              // Nếu không tăng/giảm giá, vẫn cập nhật originalRate nếu chưa có
+              if (typeof serviceItem.originalRate !== 'number' || serviceItem.originalRate !== apiRate) {
+                serviceItem.originalRate = apiRate;
+                await serviceItem.save();
+              }
               console.log(`Giá của ${serviceItem.name} đã bằng hoặc cao hơn giá API, bỏ qua cập nhật.`);
             }
           } catch (innerError) {
