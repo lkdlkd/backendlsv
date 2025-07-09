@@ -213,7 +213,7 @@ async function addOrder(req, res) {
         `🔹 *Dịch vụ:* ${serviceFromDb.maychu} ${serviceFromDb.name}\n` +
         `🔗 *Link:* ${link}\n` +
         `📌 *Số lượng:* ${qty}\n` +
-        `💰 *TIền cũ:* ${(user.balance + totalCost).toLocaleString()} VNĐ\n` +
+        `💰 *Tiền cũ:* ${(user.balance + totalCost).toLocaleString()} VNĐ\n` +
         `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
         `💰 *Tiền còn lại:* ${newBalance.toLocaleString()} VNĐ\n` +
         `🆔 *Mã đơn:* ${newMadon}\n` +
