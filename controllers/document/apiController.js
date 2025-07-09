@@ -140,6 +140,8 @@ exports.AddOrder = async (req, res) => {
         if (serviceFromDb.isActive === false) {
             throw new Error('Dịch vụ bảo trì, vui lòng liên hệ admin');
         }
+        const lai = totalCost - (apiRate * qty);
+
         // --- Bước 4: Gửi yêu cầu mua dịch vụ qua API bên thứ 3 ---
         const purchasePayload = {
             link,
@@ -180,6 +182,8 @@ exports.AddOrder = async (req, res) => {
             status: 'Pending',
             note: "",  // Gán mặc định là chuỗi rỗng khi không có note
             comments: formattedComments,
+            DomainSmm: serviceFromDb.DomainSmm,
+            lai: lai,
         });
 
         const HistoryData = new HistoryUser({
