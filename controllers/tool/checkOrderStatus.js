@@ -109,6 +109,7 @@ async function checkOrderStatus() {
               }
               user.balance = (user.balance || 0) + soTienHoan;
               await user.save();
+              const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
               const historyData = new HistoryUser({
                 username: order.username,
                 madon: order.Madon,
@@ -118,7 +119,7 @@ async function checkOrderStatus() {
                 tongtien: soTienHoan,
                 tienconlai: user.balance,
                 createdAt: new Date(),
-                mota: `Hệ thống hoàn cho bạn ${soTienHoan} dịch vụ tương đương với ${statusObj.remains} cho uid ${order.link} và 1000 phí dịch vụ`,
+                mota: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${statusObj.remains} cho uid ${order.link} và 1000 phí dịch vụ`,
               });
               await historyData.save();
               console.log(`Đã hoàn tiền cho user ${user.username} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
@@ -130,9 +131,16 @@ async function checkOrderStatus() {
                 const telegramMessage =
                   `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                   `👤 *Khách hàng:* ${order.username}\n` +
-                  `💰 *Số tiền hoàn:* ${soTienHoan}\n` +
+                  `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
                   `🔹 *Tướng ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
-                  `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
+                  `⏰ *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  })}\n`;
                 try {
                   await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
                     chat_id: teleConfig.chatId,
@@ -156,6 +164,7 @@ async function checkOrderStatus() {
               }
               user.balance = (user.balance || 0) + soTienHoan;
               await user.save();
+              const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
               const historyData = new HistoryUser({
                 username: order.username,
                 madon: order.Madon,
@@ -165,7 +174,7 @@ async function checkOrderStatus() {
                 tongtien: soTienHoan,
                 tienconlai: user.balance,
                 createdAt: new Date(),
-                mota: `Hệ thống hoàn cho bạn ${soTienHoan} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và 1000 phí dịch vụ`,
+                mota: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và 1000 phí dịch vụ`,
               });
               await historyData.save();
               console.log(`Đã hoàn tiền cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
@@ -176,9 +185,16 @@ async function checkOrderStatus() {
                 const telegramMessage =
                   `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                   `👤 *Khách hàng:* ${order.username}\n` +
-                  `💰 *Số tiền hoàn:* ${soTienHoan}\n` +
+                  `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
                   `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
-                  `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
+                  `⏰ *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  })}\n`;
                 try {
                   await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
                     chat_id: teleConfig.chatId,
@@ -240,6 +256,7 @@ async function checkOrderStatus() {
                   }
                   user.balance = (user.balance || 0) + soTienHoan;
                   await user.save();
+                  const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
                   const historyData = new HistoryUser({
                     username: order.username,
                     madon: order.Madon,
@@ -249,7 +266,7 @@ async function checkOrderStatus() {
                     tongtien: soTienHoan,
                     tienconlai: user.balance,
                     createdAt: new Date(),
-                    mota: `Hệ thống hoàn cho bạn ${soTienHoan} dịch vụ tương đương với ${statusObj.remains} cho uid ${order.link} và 1000 phí dịch vụ`,
+                    mota: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${statusObj.remains} cho uid ${order.link} và 1000 phí dịch vụ`,
                   });
                   await historyData.save();
                   console.log(`Đã hoàn tiền cho user ${user.username} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
@@ -260,9 +277,16 @@ async function checkOrderStatus() {
                     const telegramMessage =
                       `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                       `👤 *Khách hàng:* ${order.username}\n` +
-                      `💰 *Số tiền hoàn:* ${soTienHoan}\n` +
+                      `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
                       `🔹 *Tướng ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
-                      `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
+                      `⏰ *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}\n`;
                     try {
                       await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
                         chat_id: teleConfig.chatId,
@@ -286,6 +310,7 @@ async function checkOrderStatus() {
                   }
                   user.balance = (user.balance || 0) + soTienHoan;
                   await user.save();
+                  const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
                   const historyData = new HistoryUser({
                     username: order.username,
                     madon: order.Madon,
@@ -295,7 +320,7 @@ async function checkOrderStatus() {
                     tongtien: soTienHoan,
                     tienconlai: user.balance,
                     createdAt: new Date(),
-                    mota: `Hệ thống hoàn cho bạn ${soTienHoan} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và 1000 phí dịch vụ`,
+                    mota: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và 1000 phí dịch vụ`,
                   });
                   await historyData.save();
                   console.log(`Đã hoàn tiền cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
@@ -306,9 +331,16 @@ async function checkOrderStatus() {
                     const telegramMessage =
                       `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
                       `👤 *Khách hàng:* ${order.username}\n` +
-                      `💰 *Số tiền hoàn:* ${soTienHoan}\n` +
+                      `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
                       `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
-                      `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
+                      `⏰ *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}\n`;
                     try {
                       await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
                         chat_id: teleConfig.chatId,

@@ -175,7 +175,14 @@ cron.schedule('*/30 * * * * *', async () => {
                                     `🎁 *Khuyến mãi:* ${bonus}\n` +
                                     `🔹 *Tổng cộng:* ${totalAmount}\n` +
                                     `🔹 *Số dư:* ${user.balance}\n` +
-                                    `⏰ *Thời gian:* ${taoluc.toLocaleString()}\n`;
+                                    `⏰ *Thời gian:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        second: "2-digit",
+                                    })}\n`;
                                 try {
                                     await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
                                         chat_id: teleConfig.chatId,

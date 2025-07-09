@@ -215,7 +215,14 @@ exports.AddOrder = async (req, res) => {
                 `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
                 `💰 *TIền còn lại:* ${newBalance.toLocaleString()} VNĐ\n` +
                 `🆔 *Mã đơn:* ${newMadon}\n` +
-                `📆 *Ngày tạo:* ${createdAt.toLocaleString()}\n` +
+                `📆 *Ngày tạo:* ${new Date(createdAt).toLocaleString("vi-VN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                })}\n` +
                 `📝 *Ghi chú:* ${'Không có'}`;
             await sendTelegramNotification({
                 telegramBotToken: teleConfig.botToken,

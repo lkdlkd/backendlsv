@@ -114,12 +114,20 @@ exports.rechargeCardStatus = async () => {
                         await userData.save();
                         // Gửi thông báo Telegram nếu có cấu hình
                         const teleConfig = await Telegram.findOne();
+                        const taoluc = new Date();
                         if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                             const telegramMessage =
                                 `📌 *NẠP TIỀN!*\n\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
                                 `👤 *Cộng tiền:* nạp thẻ thành công số tiền ${chietkhau}.\n` +
-                                `🔹 *Tạo lúc:* ${new Date().toLocaleString()}\n`;
+                                `🔹 *Tạo lúc:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    second: "2-digit",
+                                })}\n`;
                             try {
                                 await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
                                     chat_id: teleConfig.chatId,
@@ -168,11 +176,19 @@ exports.rechargeCardStatus = async () => {
 
                         // Gửi thông báo Telegram nếu có cấu hình
                         const teleConfig = await Telegram.findOne();
+                        const taoluc = new Date();
                         if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                             const telegramMessage = `📌 *Cộng tiền!*\n\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
                                 `👤 *Cộng tiền:*  nạp thẻ thành công số tiền  ${chietkhau2} và sai mệnh giá.\n` +
-                                `🔹 *Tạo lúc:* ${new Date().toLocaleString()}\n`;
+                                `🔹 *Tạo lúc:* ${new Date(taoluc).toLocaleString("vi-VN", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    second: "2-digit",
+                                })}\n`;
                             try {
                                 await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
                                     chat_id: teleConfig.chatId,

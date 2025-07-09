@@ -93,7 +93,14 @@ exports.register = async (req, res) => {
       const telegramMessage =
         `📌 *Có khách mới được tạo!*\n\n` +
         `👤 *Khách hàng:* ${username}\n` +
-        `🔹 *Tạo lúc:* ${taoluc.toLocaleString()}\n`;
+        `🔹 *Tạo lúc:* ${new Date(taoluc).toLocaleString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })}\n`;
       try {
         await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
           chat_id: teleConfig.chatId,
@@ -232,7 +239,14 @@ exports.addBalance = async (req, res) => {
         `📌 *Cộng tiền!*\n\n` +
         `👤 *Khách hàng:* ${updatedUser.username}\n` +
         `👤 *Cộng tiền:*  Admin đã cộng thành công số tiền ${amount}.\n` +
-        `🔹 *Tạo lúc:* ${taoluc.toLocaleString()}\n`;
+        `🔹 *Tạo lúc:* ${new Date(taoluc).toLocaleString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })}\n`;
       try {
         await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
           chat_id: teleConfig.chatId,
@@ -307,7 +321,14 @@ exports.deductBalance = async (req, res) => {
         `📌 *Trừ tiền!*\n\n` +
         `👤 *Khách hàng:* ${updatedUser.username}\n` +
         `💸 *Số tiền trừ:* Admin đã trừ thành công số tiền ${amount}.\n` +
-        `🔹 *Tạo lúc:* ${taoluc.toLocaleString()}\n`;
+        `🔹 *Tạo lúc:* ${new Date(taoluc).toLocaleString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })}\n`;
       try {
         await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
           chat_id: teleConfig.chatId,
@@ -468,8 +489,7 @@ exports.getUsers = async (req, res) => {
 exports.getHistory = async (req, res) => {
   try {
     const currentUser = req.user;
-    let { page = 1, limit = 10, orderId, search } = req.query;
-
+    let { page = 1, limit = 10, orderId, search, action } = req.query;
     page = parseInt(page);
     limit = limit === "all" ? null : parseInt(limit);
     const skip = (page - 1) * (limit || 0);
@@ -483,12 +503,18 @@ exports.getHistory = async (req, res) => {
       if (search) {
         filter.username = { $regex: search, $options: "i" };
       }
+      if (action) {
+        filter.hanhdong = action;
+      }
     } else {
       // User thường: chỉ xem lịch sử của chính mình
       filter.username = currentUser.username;
       if (orderId) {
         filter.madon = orderId;
         // filter.search = link;
+      }
+      if (action) {
+        filter.hanhdong = action;
       }
     }
 
