@@ -107,7 +107,8 @@ serviceSchema.statics.updateAllTocDoDuKien = async function () {
 //   return avgSpeedStr;
 // };
 serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) {
-  const sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  // Lấy 5 đơn gần nhất trong 3 ngày
+  const sinceDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
   let orderQuery = {
     SvID: serviceId,
     status: 'Completed',
@@ -117,48 +118,37 @@ serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) 
 
   let orders = await Order.find(orderQuery)
     .sort({ updatedAt: -1 })
-    .limit(10)
+    .limit(5)
     .lean();
 
-  // Nếu không có đơn nào trong 7 ngày, lấy 10 đơn gần nhất
-  if (!orders.length) {
-    let fallbackQuery = {
-      SvID: serviceId,
-      status: 'Completed',
-    };
-    if (domainSmm) fallbackQuery.DomainSmm = domainSmm;
-    orders = await Order.find(fallbackQuery)
-      .sort({ updatedAt: -1 })
-      .limit(10)
-      .lean();
-  }
+  // Lọc chỉ lấy đơn có dachay >= quantity
+  orders = orders.filter(order => {
+    const soLuong = Number(order.dachay || order.quantity || 0);
+    const soLuongGoc = Number(order.quantity || 0);
+    return soLuong >= soLuongGoc;
+  })
 
-  if (!orders.length) return null;
+  // Nếu không có đơn nào hợp lệ, trả về "chưa cập nhật"
+  if (!orders.length) return "chưa cập nhật";
 
   let totalSoLuong = 0;
   let totalTimeSeconds = 0;
 
   for (const order of orders) {
     const { createdAt, updatedAt, dachay, quantity } = order;
-
-    // Kiểm tra ngày hợp lệ
     if (!createdAt || !updatedAt) continue;
     const timeMs = new Date(updatedAt) - new Date(createdAt);
     if (isNaN(timeMs) || timeMs <= 0) continue;
-
-    // Lấy số lượng
     const soLuong = Number(dachay || quantity || 0);
     if (!soLuong || isNaN(soLuong) || soLuong <= 0) continue;
-
-    const timeSeconds = timeMs / 1000;
-    totalTimeSeconds += timeSeconds;
+    totalTimeSeconds += timeMs / 1000;
     totalSoLuong += soLuong;
   }
 
-  if (totalSoLuong === 0 || totalTimeSeconds === 0) return null;
+  if (totalSoLuong === 0 || totalTimeSeconds === 0) return "chưa cập nhật";
 
   const secondsPer1000 = (totalTimeSeconds / totalSoLuong) * 1000;
-  if (!isFinite(secondsPer1000)) return null;
+  if (!isFinite(secondsPer1000)) return "chưa cập nhật";
 
   const amountPerHour = Math.round((3600 / secondsPer1000) * 1000);
 
