@@ -116,7 +116,6 @@ async function checkOrderStatus() {
                 continue;
               }
               let trangthai = false;
-              console.log(smmConfig, "smmConfig");
               if (smmConfig && smmConfig.autohoan === 'on') {
                 user.balance = (user.balance || 0) + soTienHoan;
                 await user.save();
@@ -252,8 +251,6 @@ async function checkOrderStatus() {
               const smmConfig = smmConfigCache[order.DomainSmm] || null;
               let phihoan = 1000;
               if (smmConfig && typeof smmConfig.phihoan === 'number') phihoan = smmConfig.phihoan;
-              console.log(smmConfig, "smmConfig");
-
               const mappedStatus = mapStatus(statusObj.status);
               console.log(`API trả về cho đơn ${orderId}:`, statusObj);
               if (mappedStatus !== null) order.status = mappedStatus;
