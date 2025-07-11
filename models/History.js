@@ -30,7 +30,7 @@ const historyUserSchema = new mongoose.Schema({
         required: true
     },
     createdAt: { type: Date, default: Date.now }, // thời gian mua
-
+    Trangthai: { type: Boolean, default: true },
     mota: {
         type: String,
         required: false

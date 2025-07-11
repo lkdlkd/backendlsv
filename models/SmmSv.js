@@ -8,6 +8,8 @@ const smmPanelPartnerSchema = new mongoose.Schema({
     tigia: { type: Number, default: 0 }, // Tỷ giá quy đổi
     status: { type: String, enum: ["on", "off"], default: "on" },
     update_price: { type: String, enum: ["on", "off"], default: "on" },
+    autohoan: { type: String, enum: ["on", "off"], default: "on" },
+    phihoan: { type: Number, default: 1000 }, // Phí hoàn tiền
     domain: { type: String, default: null },
 }, { timestamps: true });
 
