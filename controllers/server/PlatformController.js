@@ -8,11 +8,12 @@ exports.addPlatform = async (req, res) => {
       return res.status(403).json({ success: false, message: "Chỉ admin mới có quyền thực hiện thao tác này" });
     }
 
-    const { name, logo } = req.body;
+    const { name, logo, thutu } = req.body;
 
     const newPlatform = new Platform({
       name,
       logo,
+      thutu,
     });
 
     await newPlatform.save();
@@ -31,11 +32,11 @@ exports.updatePlatform = async (req, res) => {
     }
 
     const { id } = req.params; // Sử dụng _id thay vì id
-    const { name, logo, status } = req.body;
+    const { name, logo, status, thutu } = req.body;
 
     const updatedPlatform = await Platform.findByIdAndUpdate(
       id, // Tìm theo _id
-      { name, logo, status },
+      { name, logo, status, thutu },
       { new: true }
     );
 
@@ -87,7 +88,7 @@ exports.deletePlatform = async (req, res) => {
 exports.getPlatforms = async (req, res) => {
   try {
     // Lấy tất cả các platform
-    const platforms = await Platform.find(); // Sử dụng _id thay vì id
+    const platforms = await Platform.find().sort({ thutu: 1, createdAt: 1 }); // Sử dụng _id thay vì id
 
     res.status(200).json({
       success: true,

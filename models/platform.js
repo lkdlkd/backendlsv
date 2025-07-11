@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 // Schema cho Platform
 const platformSchema = new mongoose.Schema({
+  thutu: { type: Number, default : 1 }, // Thứ tự hiển thị
   name: { type: String, required: true }, // Tên platform
   logo: { type: String, required: true }, // Logo platform
   status: { type: Boolean, default: true }, // Trạng thái (true: hoạt động, false: không hoạt động)

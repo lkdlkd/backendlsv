@@ -107,8 +107,8 @@ exports.getCategories = async (req, res) => {
       })
       .sort({ thutu: 1, createdAt: 1 });
 
-    // Lấy tất cả platforms
-    const platforms = await Platform.find().sort({ createdAt: 1 });
+    // Lấy tất cả platforms theo thứ tự thutu tăng dần, nếu không có thutu thì theo createdAt
+    const platforms = await Platform.find().sort({ thutu: 1, createdAt: 1 });
 
     // Gắn categories vào từng platform
     const platformsWithCategories = platforms.map((platform) => {

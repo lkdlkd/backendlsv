@@ -31,90 +31,26 @@ const serviceSchema = new mongoose.Schema({
 
 // Hàm cập nhật tốc độ dự kiến cho tất cả dịch vụ có trong Order
 serviceSchema.statics.updateAllTocDoDuKien = async function () {
-  // Lấy tất cả cặp SvID + DomainSmm duy nhất trong Order
+  // Lấy tất cả Magoi duy nhất trong Order
   const combos = await Order.aggregate([
-    { $group: { _id: { SvID: "$SvID", DomainSmm: "$DomainSmm" } } }
+    { $group: { _id: { Magoi: "$Magoi" } } }
   ]);
   const results = [];
   for (const combo of combos) {
-    const { SvID, DomainSmm } = combo._id;
-    const tocdo = await this.updateTocDoDuKien(SvID, DomainSmm);
-    results.push({ SvID, DomainSmm, tocdo });
+    const { Magoi } = combo._id;
+    const tocdo = await this.updateTocDoDuKien(Magoi);
+    results.push({ Magoi, tocdo });
   }
   return results;
 };
-// Static method: Tính và cập nhật tốc độ dự kiến
-// serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) {
-//   const sinceDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-//   let orderQuery = {
-//     SvID: serviceId,
-//     status: 'Completed',
-//     createdAt: { $gte: sinceDate },
-//   };
-//   if (domainSmm) orderQuery.DomainSmm = domainSmm;
-
-//   let orders = await Order.find(orderQuery)
-//     .sort({ updatedAt: -1 })
-//     .limit(10)
-//     .lean();
-
-//   // Nếu không có đơn nào trong 7 ngày, lấy 10 đơn gần nhất
-//   if (!orders.length) {
-//     let fallbackQuery = {
-//       SvID: serviceId,
-//       status: 'Completed',
-//     };
-//     if (domainSmm) fallbackQuery.DomainSmm = domainSmm;
-//     orders = await Order.find(fallbackQuery)
-//       .sort({ updatedAt: -1 })
-//       .limit(10)
-//       .lean();
-//   }
-
-//   if (!orders.length) return null;
-
-//   // Tính trung bình trọng số theo dachay
-//   let totalWeightedSpeed = 0;
-//   let totalDachay = 0;
-
-//   for (const order of orders) {
-//     const timeMs = new Date(order.updatedAt) - new Date(order.createdAt);
-//     const soLuong = order.dachay || order.quantity || 0;
-//     if (soLuong === 0) continue;
-
-//     const speedPer1000 = (timeMs / soLuong) * 1000 / 1000; // giây/1000
-//     totalWeightedSpeed += speedPer1000 * soLuong;
-//     totalDachay += soLuong;
-//   }
-
-//   if (totalDachay === 0) return null;
-
-//   const avgSeconds = totalWeightedSpeed / totalDachay;
-// if (isNaN(avgSeconds)) return null; // <-- thêm dòng này
-
-//   // Format tốc độ về dạng "Xh Ym Zs/1000"
-//   const hours = Math.floor(avgSeconds / 3600);
-//   const minutes = Math.floor((avgSeconds % 3600) / 60);
-//   const seconds = Math.floor(avgSeconds % 60);
-//   let avgSpeedStr = '';
-//   if (hours > 0) avgSpeedStr += hours + 'h ';
-//   if (minutes > 0 || hours > 0) avgSpeedStr += minutes + 'm ';
-//   avgSpeedStr += seconds + 's/1000';
-
-//   // Cập nhật vào field `tocdodukien`
-//   const updateQuery = domainSmm ? { serviceId, DomainSmm: domainSmm } : { serviceId };
-//   await this.updateOne(updateQuery, { tocdodukien: avgSpeedStr });
-//   return avgSpeedStr;
-// };
-serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) {
+serviceSchema.statics.updateTocDoDuKien = async function (magoi) {
   // Lấy 5 đơn gần nhất trong 3 ngày
   const sinceDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
   let orderQuery = {
-    SvID: serviceId,
+    Magoi: magoi,
     status: 'Completed',
     createdAt: { $gte: sinceDate },
   };
-  if (domainSmm) orderQuery.DomainSmm = domainSmm;
 
   let orders = await Order.find(orderQuery)
     .sort({ updatedAt: -1 })
@@ -126,7 +62,7 @@ serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) 
     const soLuong = Number(order.dachay || order.quantity || 0);
     const soLuongGoc = Number(order.quantity || 0);
     return soLuong >= soLuongGoc;
-  })
+  });
 
   // Nếu không có đơn nào hợp lệ, trả về "chưa cập nhật"
   if (!orders.length) return "chưa cập nhật";
@@ -164,9 +100,7 @@ serviceSchema.statics.updateTocDoDuKien = async function (serviceId, domainSmm) 
   avgSpeedStr += `  ( số lượng ~${amountPerHour.toLocaleString()}/h)`;
 
   // Cập nhật vào field `tocdodukien`
-  const updateQuery = domainSmm
-    ? { serviceId, DomainSmm: domainSmm }
-    : { serviceId };
+  const updateQuery = { Magoi: magoi };
   await this.updateOne(updateQuery, { tocdodukien: avgSpeedStr });
   return avgSpeedStr;
 };
