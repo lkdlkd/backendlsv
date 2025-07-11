@@ -172,6 +172,7 @@ async function addOrder(req, res) {
     const createdAt = new Date();
     const orderData = new Order({
       Madon: newMadon,
+      Magoi: serviceFromDb.Magoi,
       username,
       SvID: serviceFromDb.serviceId,
       orderId: purchaseResponse.order,

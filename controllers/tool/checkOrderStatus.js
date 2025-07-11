@@ -29,8 +29,11 @@ function mapStatus(apiStatus) {
 
 async function checkOrderStatus() {
   try {
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
     const runningOrders = await Order.find({
-      status: { $in: ["Pending", "In progress", "Processing"] }
+      status: { $in: ["Pending", "In progress", "Processing"] },
+      createdAt: { $gte: threeMonthsAgo }
     });
     if (runningOrders.length === 0) {
       console.log("Không có đơn hàng đang chạy.");
