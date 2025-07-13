@@ -264,6 +264,45 @@ exports.getStatistics = async (req, res) => {
             { $project: { Magoi: "$_id", totalOrders: 1, partialCount: 1, canceledCount: 1, namesv: 1, totalAmount: 1, _id: 0 } }
         ]);
 
+        // Biểu đồ: tổng hợp theo ngày trong range
+        const chartMatch = { createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end } };
+        // Đếm số đơn tạo và tổng tiền mỗi ngày
+        const dailyOrders = await Order.aggregate([
+            { $match: chartMatch },
+            { $group: { 
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Ho_Chi_Minh" } },
+                count: { $sum: 1 },
+                total: { $sum: "$totalCost" }
+            } },
+            { $sort: { _id: 1 } }
+        ]);
+        // Đếm số đơn Partial và tổng tiền mỗi ngày
+        const dailyPartial = await Order.aggregate([
+            { $match: { ...chartMatch, status: "Partial" } },
+            { $group: { 
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Ho_Chi_Minh" } },
+                count: { $sum: 1 },
+                total: { $sum: "$totalCost" }
+            } },
+            { $sort: { _id: 1 } }
+        ]);
+        // Đếm số đơn Canceled và tổng tiền mỗi ngày
+        const dailyCanceled = await Order.aggregate([
+            { $match: { ...chartMatch, status: "Canceled" } },
+            { $group: { 
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Ho_Chi_Minh" } },
+                count: { $sum: 1 },
+                total: { $sum: "$totalCost" }
+            } },
+            { $sort: { _id: 1 } }
+        ]);
+        // Tổng số tiền nạp mỗi ngày
+        const dailyDeposits = await Deposit.aggregate([
+            { $match: { ...chartMatch, hanhdong: { $regex: "(nạp tiền|Cộng tiền)", $options: "i" } } },
+            { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Ho_Chi_Minh" } }, total: { $sum: "$tongtien" } } },
+            { $sort: { _id: 1 } }
+        ]);
+
         res.status(200).json({
             tonguser,
             tongtienweb,
@@ -279,7 +318,13 @@ exports.getStatistics = async (req, res) => {
             canceledCount, // số đơn Canceled theo range
             partialHoan, // tổng tiền hoàn Partial
             canceledHoan, // tổng tiền hoàn Canceled
-            magoiStats // thống kê theo Magoi
+            magoiStats, // thống kê theo Magoi
+            chartData: {
+                dailyOrders,
+                dailyDeposits,
+                dailyPartial,
+                dailyCanceled
+            }
         });
     } catch (error) {
         console.error("Lỗi thống kê:", error);
