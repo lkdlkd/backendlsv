@@ -58,8 +58,8 @@ router.delete('/user/delete/:id', authenticate.authenticateAdmin, user.deleteUse
 router.get('/users', authenticate.authenticateAdmin, user.getUsers); // Lấy danh sách tất cả người dùng
 router.get('/thongke', authenticate.authenticateAdmin, getStatistics); // Lấy thông tin người dùng theo ID
 router.delete('/order/delete/:orderId', authenticate.authenticateAdmin, deleteOrder); // ok Xóa đơn hàng (chỉ admin)
-router.put('/banking/update/:id', authenticate.authenticateUser, banking.updateBank); // ok Cập nhật thông tin ngân hàng
-router.delete('/banking/delete/:id', authenticate.authenticateUser, banking.deleteBank); // ok Xóa thông tin ngân hàng
+router.put('/banking/update/:id', authenticate.authenticateAdmin, banking.updateBank); // ok Cập nhật thông tin ngân hàng
+router.delete('/banking/delete/:id', authenticate.authenticateAdmin, banking.deleteBank); // ok Xóa thông tin ngân hàng
 router.post('/banking/create', authenticate.authenticateAdmin, banking.createBank); // ok Tạo mới thông tin ngân hàng
 // Category routes
 router.post('/categories', authenticate.authenticateAdmin, catagory.addCategory); // Thêm mới category (chỉ admin)
