@@ -5,8 +5,11 @@ const Deposit = require("../../models/History");
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
+const isoWeek = require('dayjs/plugin/isoWeek'); // 🧠 dùng để tuần bắt đầu từ thứ 2
+
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(isoWeek); // 👈 thêm dòng này
 
 // Hàm lấy thời gian bắt đầu và kết thúc theo range
 // function getRange(range) {
@@ -59,12 +62,13 @@ function getRange(range) {
             end = now.subtract(1, "day").endOf("day");
             break;
         case "this_week":
-            start = now.startOf("week");
-            end = now.endOf("week");
+            start = now.startOf("isoWeek"); // tuần bắt đầu từ Thứ hai
+            end = now.endOf("isoWeek");
             break;
         case "last_week":
-            start = now.subtract(1, "week").startOf("week");
-            end = now.subtract(1, "week").endOf("week");
+            const lastWeek = now.subtract(1, "week");
+            start = lastWeek.startOf("isoWeek").startOf("day");
+            end = lastWeek.endOf("isoWeek").endOf("day");
             break;
         case "this_month":
             start = now.startOf("month");
@@ -94,13 +98,33 @@ exports.getStatistics = async (req, res) => {
         }
 
         // Lấy range từ query, mặc định là "today"
-        const { napRange = "today", doanhthuRange = "today" } = req.query;
-        const napTime = getRange(napRange);
-        const doanhthuTime = getRange(doanhthuRange);
-
+        const { doanhthuRange = "today", customStart, customEnd } = req.query;
+        let doanhthuTime;
+        if (customStart && customEnd) {
+            // Nếu customEnd chỉ là ngày (không có giờ), set về cuối ngày đó
+            let endDate;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(customEnd)) {
+                // Nếu customEnd là hôm nay, set về giờ hiện tại
+                const todayStr = dayjs().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD');
+                if (customEnd === todayStr) {
+                    endDate = new Date(); // giờ hiện tại
+                } else {
+                    // Set về cuối ngày customEnd
+                    endDate = dayjs(customEnd).tz('Asia/Ho_Chi_Minh').endOf('day').toDate();
+                }
+            } else {
+                // Nếu customEnd có cả giờ phút giây, dùng luôn
+                endDate = new Date(customEnd);
+            }
+            doanhthuTime = {
+                start: dayjs(customStart).tz('Asia/Ho_Chi_Minh').startOf('day').toDate(),
+                end: endDate
+            };
+        } else {
+            doanhthuTime = getRange(doanhthuRange);
+        }
         // Tổng số thành viên
         const tonguser = await User.countDocuments();
-
         // Tổng số dư của người dùng
         const balanceAgg = await User.aggregate([
             { $group: { _id: null, totalBalance: { $sum: "$balance" } } }
@@ -116,7 +140,7 @@ exports.getStatistics = async (req, res) => {
         const revenueAgg = await Order.aggregate([
             {
                 $match: {
-                    status: { $in: ["running", "In progress", "Processing", "Pending", "Completed"] },
+                    status: { $in: ["running", "In progress", "Processing", "Pending", "Completed", ""] },
                     createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
                 }
             },
@@ -132,7 +156,7 @@ exports.getStatistics = async (req, res) => {
             {
                 $match: {
                     createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end },
-                    status: { $in: ["running", "In progress", "Processing", "Pending", "Completed"] }
+                    status: { $in: ["running", "In progress", "Processing", "Pending", "Completed", "Partial", "Canceled"] }
                 }
             },
             {
@@ -145,7 +169,7 @@ exports.getStatistics = async (req, res) => {
         const depositRangeAgg = await Deposit.aggregate([
             {
                 $match: {
-                    createdAt: { $gte: napTime.start, $lte: napTime.end },
+                    createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end },
                     hanhdong: { $regex: "(nạp tiền|Cộng tiền)", $options: "i" }
                 }
             },
@@ -177,6 +201,69 @@ exports.getStatistics = async (req, res) => {
         ]);
         const tongdanap = userDepositAgg[0] ? userDepositAgg[0].totalDeposited : 0;
 
+        // Thống kê số đơn Partial và Canceled theo range
+        const partialCount = await Order.countDocuments({
+            status: 'Partial',
+            createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
+        });
+        const canceledCount = await Order.countDocuments({
+            status: 'Canceled',
+            createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
+        });
+        // Tổng số tiền đã hoàn cho Partial
+        const partialHoanAgg = await Order.aggregate([
+            {
+                $match: {
+                    status: 'Partial',
+                    createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
+                }
+            },
+            {
+                $group: { _id: null, totalHoan: { $sum: "$totalCost" } }
+            }
+        ]);
+        const partialHoan = partialHoanAgg[0] ? partialHoanAgg[0].totalHoan : 0;
+        // Tổng số tiền đã hoàn cho Canceled
+        const canceledHoanAgg = await Order.aggregate([
+            {
+                $match: {
+                    status: 'Canceled',
+                    createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
+                }
+            },
+            {
+                $group: { _id: null, totalHoan: { $sum: "$totalCost" } }
+            }
+        ]);
+        const canceledHoan = canceledHoanAgg[0] ? canceledHoanAgg[0].totalHoan : 0;
+
+        // Thống kê theo Magoi: số đơn tạo, số đơn Partial, số đơn Canceled, tổng tiền, kèm namesv từ order đầu tiên
+        const magoiStats = await Order.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
+                }
+            },
+            {
+                $sort: { createdAt: 1 } // đảm bảo lấy order đầu tiên theo thời gian
+            },
+            {
+                $group: {
+                    _id: "$Magoi",
+                    totalOrders: { $sum: 1 },
+                    partialCount: {
+                        $sum: { $cond: [{ $eq: ["$status", "Partial"] }, 1, 0] }
+                    },
+                    canceledCount: {
+                        $sum: { $cond: [{ $eq: ["$status", "Canceled"] }, 1, 0] }
+                    },
+                    namesv: { $first: "$namesv" },
+                    totalAmount: { $sum: "$totalCost" }
+                }
+            },
+            { $project: { Magoi: "$_id", totalOrders: 1, partialCount: 1, canceledCount: 1, namesv: 1, totalAmount: 1, _id: 0 } }
+        ]);
+
         res.status(200).json({
             tonguser,
             tongtienweb,
@@ -187,8 +274,12 @@ exports.getStatistics = async (req, res) => {
             tongnapthang,
             tongnapngay,
             tongdoanhthuhnay,
-            napRange,
-            doanhthuRange
+            doanhthuRange,
+            partialCount, // số đơn Partial theo range
+            canceledCount, // số đơn Canceled theo range
+            partialHoan, // tổng tiền hoàn Partial
+            canceledHoan, // tổng tiền hoàn Canceled
+            magoiStats // thống kê theo Magoi
         });
     } catch (error) {
         console.error("Lỗi thống kê:", error);
