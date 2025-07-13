@@ -303,6 +303,32 @@ exports.getStatistics = async (req, res) => {
             { $sort: { _id: 1 } }
         ]);
 
+        // Gộp dữ liệu chart thành 1 mảng dailyChart
+        // Tạo map theo ngày cho từng loại
+        const mapOrders = Object.fromEntries(dailyOrders.map(i => [i._id, i]));
+        const mapDeposits = Object.fromEntries(dailyDeposits.map(i => [i._id, i]));
+        const mapPartial = Object.fromEntries(dailyPartial.map(i => [i._id, i]));
+        const mapCanceled = Object.fromEntries(dailyCanceled.map(i => [i._id, i]));
+
+        // Lấy tất cả ngày xuất hiện ở bất kỳ loại nào
+        const allDates = Array.from(new Set([
+            ...dailyOrders.map(i => i._id),
+            ...dailyDeposits.map(i => i._id),
+            ...dailyPartial.map(i => i._id),
+            ...dailyCanceled.map(i => i._id)
+        ])).sort();
+
+        const dailyChart = allDates.map(date => ({
+            date,
+            orders: mapOrders[date]?.count || 0,
+            ordersTotal: mapOrders[date]?.total || 0,
+            deposits: mapDeposits[date]?.total || 0,
+            partial: mapPartial[date]?.count || 0,
+            partialTotal: mapPartial[date]?.total || 0,
+            canceled: mapCanceled[date]?.count || 0,
+            canceledTotal: mapCanceled[date]?.total || 0
+        }));
+
         res.status(200).json({
             tonguser,
             tongtienweb,
@@ -319,12 +345,7 @@ exports.getStatistics = async (req, res) => {
             partialHoan, // tổng tiền hoàn Partial
             canceledHoan, // tổng tiền hoàn Canceled
             magoiStats, // thống kê theo Magoi
-            chartData: {
-                dailyOrders,
-                dailyDeposits,
-                dailyPartial,
-                dailyCanceled
-            }
+            chartData: dailyChart
         });
     } catch (error) {
         console.error("Lỗi thống kê:", error);
