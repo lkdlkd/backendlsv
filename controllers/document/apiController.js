@@ -141,6 +141,7 @@ exports.AddOrder = async (req, res) => {
             throw new Error('Dịch vụ bảo trì, vui lòng liên hệ admin');
         }
         const lai = totalCost - (apiRate * qty);
+        const tientieu = apiRate * qty;
 
         // --- Bước 4: Gửi yêu cầu mua dịch vụ qua API bên thứ 3 ---
         const purchasePayload = {
@@ -185,6 +186,7 @@ exports.AddOrder = async (req, res) => {
             comments: formattedComments,
             DomainSmm: serviceFromDb.DomainSmm,
             lai: lai,
+            tientieu: tientieu,
         });
 
         const HistoryData = new HistoryUser({

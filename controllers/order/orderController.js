@@ -30,7 +30,7 @@ async function getOrders(req, res) {
   }
 
   try {
-    let selectFields = '-SvID -orderId -DomainSmm -lai';
+    let selectFields = '-SvID -orderId -DomainSmm -lai -tientieu'; // Các trường không cần thiết cho người dùng thường
     if (user.role === 'admin') {
       selectFields = ''; // admin xem tất cả các trường
     }
@@ -149,6 +149,7 @@ async function addOrder(req, res) {
       throw new Error('Dịch vụ bảo trì, vui lòng liên hệ admin');
     }
     const lai = totalCost - (apiRate * qty);
+    const tientieu =  apiRate * qty ;
     // Gửi yêu cầu mua dịch vụ
     const purchasePayload = {
       link,
@@ -188,6 +189,7 @@ async function addOrder(req, res) {
       ObjectLink,
       comments: formattedComments,
       DomainSmm: serviceFromDb.DomainSmm,
+      tientieu : tientieu,
       lai: lai,
     });
 

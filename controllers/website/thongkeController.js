@@ -140,12 +140,12 @@ exports.getStatistics = async (req, res) => {
         const revenueAgg = await Order.aggregate([
             {
                 $match: {
-                    status: { $in: ["running", "In progress", "Processing", "Pending", "Completed", ""] },
+                    status: { $in: ["running", "In progress", "Processing", "Pending", "Completed", "Partial" , "Canceled"] },
                     createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
                 }
             },
             {
-                $group: { _id: "$DomainSmm", totalLai: { $sum: "$lai" } }
+                $group: { _id: "$DomainSmm", totalLai: { $sum: "$lai" }, totalTientieu: { $sum: "$tientieu" }, totalCost: { $sum: "$totalCost" } }
             }
         ]);
         // Tổng lợi nhuận tất cả DomainSmm trong range
@@ -201,41 +201,6 @@ exports.getStatistics = async (req, res) => {
         ]);
         const tongdanap = userDepositAgg[0] ? userDepositAgg[0].totalDeposited : 0;
 
-        // Thống kê số đơn Partial và Canceled theo range
-        const partialCount = await Order.countDocuments({
-            status: 'Partial',
-            createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
-        });
-        const canceledCount = await Order.countDocuments({
-            status: 'Canceled',
-            createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
-        });
-        // Tổng số tiền đã hoàn cho Partial
-        const partialHoanAgg = await Order.aggregate([
-            {
-                $match: {
-                    status: 'Partial',
-                    createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
-                }
-            },
-            {
-                $group: { _id: null, totalHoan: { $sum: "$totalCost" } }
-            }
-        ]);
-        const partialHoan = partialHoanAgg[0] ? partialHoanAgg[0].totalHoan : 0;
-        // Tổng số tiền đã hoàn cho Canceled
-        const canceledHoanAgg = await Order.aggregate([
-            {
-                $match: {
-                    status: 'Canceled',
-                    createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end }
-                }
-            },
-            {
-                $group: { _id: null, totalHoan: { $sum: "$totalCost" } }
-            }
-        ]);
-        const canceledHoan = canceledHoanAgg[0] ? canceledHoanAgg[0].totalHoan : 0;
 
         // Thống kê theo Magoi: số đơn tạo, số đơn Partial, số đơn Canceled, tổng tiền, kèm namesv từ order đầu tiên
         const magoiStats = await Order.aggregate([
@@ -276,26 +241,52 @@ exports.getStatistics = async (req, res) => {
             } },
             { $sort: { _id: 1 } }
         ]);
-        // Đếm số đơn Partial và tổng tiền mỗi ngày
-        const dailyPartial = await Order.aggregate([
-            { $match: { ...chartMatch, status: "Partial" } },
-            { $group: { 
-                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Ho_Chi_Minh" } },
-                count: { $sum: 1 },
-                total: { $sum: "$totalCost" }
-            } },
-            { $sort: { _id: 1 } }
+        // Lấy dailyPartial và dailyCanceled từ bảng HistoryUser, join với Order để xác định trạng thái
+        const HistoryUser = require("../../models/History");
+        // Lấy tất cả history hoàn tiền trong range
+        const allRefunds = await HistoryUser.aggregate([
+            { $match: { hanhdong: { $regex: "Hoàn tiền", $options: "i" }, createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end } } },
+            { $project: { madon: 1, tongtien: 1, createdAt: 1 } }
         ]);
-        // Đếm số đơn Canceled và tổng tiền mỗi ngày
-        const dailyCanceled = await Order.aggregate([
-            { $match: { ...chartMatch, status: "Canceled" } },
-            { $group: { 
-                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "Asia/Ho_Chi_Minh" } },
-                count: { $sum: 1 },
-                total: { $sum: "$totalCost" }
-            } },
-            { $sort: { _id: 1 } }
-        ]);
+        // Lấy trạng thái các mã đơn liên quan
+        const madonList = allRefunds.map(r => r.madon);
+        // Tìm theo cả madon và Magoi (nhiều hệ thống lưu mã đơn ở 2 trường khác nhau)
+        const orderStatusList = await Order.find({ $or: [ { Madon: { $in: madonList } } ] }, { Madon: 1, status: 1 });
+        const madonStatusMap = {};
+        orderStatusList.forEach(o => {
+            if (o.Madon) madonStatusMap[o.Madon] = o.status;
+            if (o.Magoi) madonStatusMap[o.Magoi] = o.status;
+        });
+        // Gom nhóm theo ngày và trạng thái
+        const partialMap = {};
+        const canceledMap = {};
+        allRefunds.forEach(r => {
+            const status = madonStatusMap[r.madon];
+            const date = dayjs(r.createdAt).tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD');
+            if (status === 'Partial') {
+                if (!partialMap[date]) partialMap[date] = { _id: date, count: 0, total: 0 };
+                partialMap[date].count += 1;
+                partialMap[date].total += r.tongtien;
+            } else if (status === 'Canceled') {
+                if (!canceledMap[date]) canceledMap[date] = { _id: date, count: 0, total: 0 };
+                canceledMap[date].count += 1;
+                canceledMap[date].total += r.tongtien;
+            }
+        });
+        // Chuyển sang mảng và sort
+        const dailyPartial = Object.values(partialMap).sort((a, b) => a._id.localeCompare(b._id));
+        const dailyCanceled = Object.values(canceledMap).sort((a, b) => a._id.localeCompare(b._id));
+
+        // Tổng hợp số đơn và tổng tiền hoàn Partial/Canceled theo range
+        let partialCount = 0, canceledCount = 0, partialHoan = 0, canceledHoan = 0;
+        Object.values(partialMap).forEach(item => {
+            partialCount += item.count;
+            partialHoan += item.total;
+        });
+        Object.values(canceledMap).forEach(item => {
+            canceledCount += item.count;
+            canceledHoan += item.total;
+        });
         // Tổng số tiền nạp mỗi ngày
         const dailyDeposits = await Deposit.aggregate([
             { $match: { ...chartMatch, hanhdong: { $regex: "(nạp tiền|Cộng tiền)", $options: "i" } } },

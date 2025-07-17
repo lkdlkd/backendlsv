@@ -57,7 +57,7 @@ async function updateServicePrices() {
             console.log(`Kiểm tra dịch vụ: ${serviceItem.name} - Giá API: ${apiRate}, Giá CSDL: ${dbRate}`);
             // So sánh và cập nhật giá
             if (dbRate < apiRate) {
-              let newRate = apiRate * 1.1; // cập nhật với 10% tăng thêm
+              let newRate = apiRate * (1 + Number(smmSvConfig.price_update) / 100); // cập nhật với tỷ lệ tăng đã cấu hình
               newRate = Math.round(newRate * 10000) / 10000; // Làm tròn 4 chữ số thập phân
               const oldRate = serviceItem.rate;
               serviceItem.rate = newRate;
@@ -99,7 +99,7 @@ async function updateServicePrices() {
               apiRate < serviceItem.originalRate &&
               smmSvConfig.update_price === "on"
             ) {
-              let newRate = apiRate * 1.1;
+              let newRate = apiRate * (1 + Number(smmSvConfig.price_update) / 100);
               newRate = Math.round(newRate * 10000) / 10000;
               const oldRate = serviceItem.rate;
               serviceItem.rate = newRate;
