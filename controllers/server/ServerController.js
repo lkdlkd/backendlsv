@@ -101,6 +101,8 @@ exports.getServer = async (req, res) => {
         tocdodukien: service.tocdodukien || "Chưa cập nhật",
         logo: service.type ? service.type.logo : "", // Lấy logo của Platform
         updatedAt: service.updatedAt,
+        refil: service.refil,
+        cancel: service.cancel,
       }));
 
       return res.status(200).json({
@@ -137,7 +139,8 @@ exports.getServer = async (req, res) => {
         logo: service.type ? service.type.logo : "", // Lấy logo của Platform
         isActive: service.isActive,
         updatedAt: service.updatedAt,
-
+        refil: service.refil,
+        cancel: service.cancel,
       }));
 
       return res.status(200).json({ success: true, data: formattedServices });
@@ -246,7 +249,8 @@ exports.getServerByTypeAndPath = async (req, res) => {
       isActive: service.isActive,
       tocdodukien: service.tocdodukien || "Chưa cập nhật",
       updatedAt: service.updatedAt,
-
+      refil: service.refil,
+      cancel: service.cancel,
     }));
 
     return res.status(200).json({

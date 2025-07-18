@@ -18,6 +18,9 @@ const configCardController = require("../controllers/website/configCardControlle
 const { createPromotion, updatePromotion, deletePromotion, getPromotions } = require('../controllers/Khuyenmai/KhuyenmaiController');
 
 const SmmController = require('../controllers/Smm/Smm');
+// const refillCancelController = require('../controllers/order/RefilandCancelController');
+
+// router.post('/refill', authenticate.authenticateUser, refillCancelController.refillOrder); // ok Thực hiện refill đơn hàng
 //auth
 router.post('/login', user.login);//ok
 router.post('/register', user.register);//ok

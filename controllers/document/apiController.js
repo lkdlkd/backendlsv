@@ -187,6 +187,8 @@ exports.AddOrder = async (req, res) => {
             DomainSmm: serviceFromDb.DomainSmm,
             lai: lai,
             tientieu: tientieu,
+            refil: serviceFromDb.refil,
+            cancel: serviceFromDb.cancel,
         });
 
         const HistoryData = new HistoryUser({

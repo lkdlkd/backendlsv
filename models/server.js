@@ -21,10 +21,12 @@ const serviceSchema = new mongoose.Schema({
   tocdodukien: { type: String, required: false },//tốc độ dự kiến
   serviceId: { type: String, required: true },//sv ở bên thứ 3
   //option
+  refil: { type: String, enum: ["on", "off"], default: "off" },//chức năng refil
+  cancel : { type: String, enum: ["on", "off"], default: "off" },//chức năng hủy đơn
   getid: { type: String, enum: ["on", "off"], default: "on" },//chức năng get id sau khi nhập link mua
-  comment: { type: String, enum: ["on", "off"], default: "of" },//chức năng get id sau khi nhập link mua
-  reaction: { type: String, enum: ["on", "off"], default: "of" },//chức năng get id sau khi nhập link mua
-  matlive: { type: String, enum: ["on", "off"], default: "of" },//chức năng get id sau khi nhập link mua
+  comment: { type: String, enum: ["on", "off"], default: "off" },//chức năng get id sau khi nhập link mua
+  reaction: { type: String, enum: ["on", "off"], default: "off" },//chức năng get id sau khi nhập link mua
+  matlive: { type: String, enum: ["on", "off"], default: "off" },//chức năng get id sau khi nhập link mua
   isActive: { type: Boolean, default: true }, // Hiển thị hoặc ẩn dịch vụ
   domain: { type: String, default: null },
 }, { timestamps: true }); // Thêm createdAt và updatedAt tự động
