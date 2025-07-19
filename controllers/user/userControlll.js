@@ -21,6 +21,12 @@ exports.login = async (req, res) => {
       return res.status(403).json({ error: "Tài khoản đã bị khóa" });
     }
 
+    // Lưu lịch sử đăng nhập vào mảng loginHistory
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress || (req.connection.socket ? req.connection.socket.remoteAddress : null);
+    const userAgent = req.headers['user-agent'] || '';
+    user.loginHistory = user.loginHistory || [];
+    user.loginHistory.push({ ip, agent: userAgent, time: new Date() });
+    await user.save();
     // ✅ Tạo token mới
     const token = jwt.sign(
       { username: user.username, userId: user._id, role: user.role },
@@ -28,6 +34,36 @@ exports.login = async (req, res) => {
       { expiresIn: "7d" } // Có thể thêm thời gian sống token
     );
 
+    // Nếu là admin, gửi thông báo Telegram
+    if (user.role === 'admin') {
+      const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000);
+      const teleConfig = await Telegram.findOne();
+      if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+        const telegramMessage =
+          `📌 *Admin đăng nhập!*\n` +
+          `👤 *Admin:* ${user.username}\n` +
+          `🔹 *IP:* ${ip}\n` +
+          `🔹 *User-Agent:* ${userAgent}\n` +
+          `🔹 *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })}\n`;
+        try {
+          await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+            chat_id: teleConfig.chatId,
+            text: telegramMessage,
+            parse_mode: "Markdown",
+          });
+          console.log("Thông báo Telegram admin đăng nhập đã được gửi.");
+        } catch (telegramError) {
+          console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
+        }
+      }
+    }
     // ✅ Trả về token mới
     return res.status(200).json({ token, role: user.role, username: user.username });
   } catch (error) {
@@ -139,6 +175,9 @@ exports.getMe = async (req, res) => {
     }
 
     // Trả về thông tin user nhưng thay token bằng apiKey
+    const loginHistory = Array.isArray(user.loginHistory)
+      ? user.loginHistory.slice(-10).reverse()
+      : [];
     return res.status(200).json({
       balance: user.balance,
       capbac: user.capbac,
@@ -151,6 +190,7 @@ exports.getMe = async (req, res) => {
       updatedAt: user.updatedAt,
       userId: user._id,
       username: user.username,
+      loginHistory,
     });
   } catch (error) {
     console.error("Get user error:", error);
