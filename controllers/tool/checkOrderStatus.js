@@ -165,6 +165,7 @@ async function checkOrderStatus() {
                   console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
                 }
               }
+              order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
             }
           }
           if (mappedStatus === 'Canceled') {
@@ -224,6 +225,7 @@ async function checkOrderStatus() {
                   console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
                 }
               }
+              order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
             }
           }
           await order.save();
@@ -323,6 +325,7 @@ async function checkOrderStatus() {
                       console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
                     }
                   }
+                  order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
                 }
               }
               if (mappedStatus === 'Canceled') {
@@ -383,6 +386,7 @@ async function checkOrderStatus() {
                       console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
                     }
                   }
+                  order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
                 }
               }
               await order.save();

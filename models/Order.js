@@ -23,6 +23,7 @@ const orderSchema = new mongoose.Schema({
   DomainSmm: { type: String, default: null }, // tên miền của dịch vụ
   refil: { type: String, enum: ["on", "off"], default: "off" }, // chức năng refil
   cancel: { type: String, enum: ["on", "off"], default: "off" }, // chức năng hủy đơn
+  iscancel: { type: Boolean, default: false }, // trạng thái hủy đơn
   domain: { type: String, default: null },
 }, { timestamps: true }); // Tự động tạo createdAt và updatedAt
 
