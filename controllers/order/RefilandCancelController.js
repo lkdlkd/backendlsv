@@ -13,9 +13,11 @@ exports.refillOrder = async (req, res) => {
         const order = await Order.findOne({ Madon: madon });
         if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
         // Kiểm tra quyền hủy đơn
-        if (order.username !== user.username) {
-            return res.status(403).json({ success: false, error: 'Bạn không có quyền hủy đơn này!' });
+        // Kiểm tra quyền hủy đơn
+        if (user.role !== 'admin' && order.username !== user.username) {
+            return res.status(403).json({ success: false, error: 'Bạn không có quyền thực hiện!' });
         }
+
         // Lấy config SmmSv theo domain
         const smmConfig = await SmmSv.findOne({ name: order.DomainSmm });
         if (!smmConfig) return res.status(400).json({ error: 'Lỗi liên hệ admin!' });
@@ -26,7 +28,7 @@ exports.refillOrder = async (req, res) => {
         const apiResult = await smmApi.refill(order.orderId);
 
         if (apiResult.error) {
-            return res.status(400).json({ success: false, error:"Lỗi thử lại , liên hệ admin" });
+            return res.status(400).json({ success: false, error: "Lỗi thử lại , liên hệ admin" });
         }
 
         res.json({ success: true, message: 'Đơn hàng đã được bảo hành thành công' });
@@ -47,8 +49,8 @@ exports.cancelOrder = async (req, res) => {
         if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
 
         // Kiểm tra quyền hủy đơn
-        if (order.username !== user.username) {
-            return res.status(403).json({ success: false, error: 'Bạn không có quyền hủy đơn này!' });
+        if (user.role !== 'admin' && order.username !== user.username) {
+            return res.status(403).json({ success: false, error: 'Bạn không có quyền thực hiện!' });
         }
 
         // Lấy config SmmSv theo domain
