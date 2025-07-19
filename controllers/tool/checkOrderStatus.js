@@ -111,6 +111,7 @@ async function checkOrderStatus() {
             if (user) {
               const soTienHoan = ((statusObj.remains || 0) * order.rate) - phihoan;
               if ((soTienHoan) < 50) {
+                order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
                 await order.save();
                 console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
                 continue;
@@ -172,6 +173,7 @@ async function checkOrderStatus() {
             if (user) {
               const soTienHoan = ((order.quantity || 0) * order.rate) - phihoan;
               if ((soTienHoan) < 50) {
+                order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
                 await order.save();
                 console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
                 continue;
@@ -272,6 +274,7 @@ async function checkOrderStatus() {
                 if (user) {
                   const soTienHoan = ((statusObj.remains || 0) * order.rate) - phihoan;
                   if ((soTienHoan) < 50) {
+                    order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
                     await order.save();
                     console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
                     continue;
@@ -332,6 +335,7 @@ async function checkOrderStatus() {
                 if (user) {
                   const soTienHoan = ((order.quantity || 0) * order.rate) - phihoan;
                   if ((soTienHoan) < 50) {
+                    order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
                     await order.save();
                     console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
                     continue;
