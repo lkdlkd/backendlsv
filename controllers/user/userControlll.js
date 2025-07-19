@@ -22,7 +22,7 @@ exports.login = async (req, res) => {
     }
 
     // Lưu lịch sử đăng nhập vào mảng loginHistory
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress || (req.connection.socket ? req.connection.socket.remoteAddress : null);
+    const ip = req.headers['x-forwarded-for'] || null ;
     const userAgent = req.headers['user-agent'] || '';
     user.loginHistory = user.loginHistory || [];
     user.loginHistory.push({ ip, agent: userAgent, time: new Date() });
