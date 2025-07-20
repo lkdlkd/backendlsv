@@ -9,7 +9,7 @@ const Telegram = require('../../models/Telegram');
 // Lấy đơn hàng theo category, user, và từ khóa tìm kiếm (phân trang)
 async function getOrders(req, res) {
   const user = req.user;
-  const { category, search } = req.query;
+  const { category, search , status } = req.query;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
@@ -21,6 +21,9 @@ async function getOrders(req, res) {
   }
   if (category) {
     filter.category = category;
+  }
+  if (status) {
+    filter.status = status;
   }
   if (search) {
     filter.$or = [
