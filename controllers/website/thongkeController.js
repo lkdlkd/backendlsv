@@ -136,7 +136,7 @@ exports.getStatistics = async (req, res) => {
             status: { $in: ["running", "In progress", "Processing", "Pending"] }
         });
 
-        // Tổng doanh thu (lợi nhuận) theo từng DomainSmm và theo range
+        // Tổng doanh thu (lợi nhuận) theo từng DomainSmm và tổng tiền hoàn theo trạng thái đơn tại thời điểm hoàn tiền
         const revenueAgg = await Order.aggregate([
             {
                 $match: {
@@ -148,6 +148,42 @@ exports.getStatistics = async (req, res) => {
                 $group: { _id: "$DomainSmm", totalLai: { $sum: "$lai" }, totalTientieu: { $sum: "$tientieu" }, totalCost: { $sum: "$totalCost" } }
             }
         ]);
+
+        // Tính tổng tiền hoàn cho từng DomainSmm dựa trên trạng thái đơn tại thời điểm hoàn tiền
+        // Lấy tất cả lịch sử hoàn tiền trong range
+        const refundsForDomain = await Deposit.aggregate([
+            { $match: { hanhdong: { $regex: "Hoàn tiền", $options: "i" }, createdAt: { $gte: doanhthuTime.start, $lte: doanhthuTime.end } } },
+            { $project: { madon: 1, tongtien: 1 } }
+        ]);
+        // Join với Order để lấy domain và trạng thái tại thời điểm hoàn tiền
+        const madonListForDomain = refundsForDomain.map(r => r.madon);
+        const orderListForDomain = await Order.find({ Madon: { $in: madonListForDomain } }, { Madon: 1, DomainSmm: 1, status: 1 });
+        // Map madon -> domain, status
+        const madonDomainMap = {};
+        orderListForDomain.forEach(o => {
+            madonDomainMap[o.Madon] = { domain: o.DomainSmm, status: o.status };
+        });
+        // Gom tổng tiền hoàn theo domain và trạng thái
+        const refundDomainMap = {};
+        refundsForDomain.forEach(r => {
+            const info = madonDomainMap[r.madon];
+            if (!info) return;
+            const domain = info.domain || 'Unknown';
+            const status = info.status;
+            if (!refundDomainMap[domain]) {
+                refundDomainMap[domain] = { totalRefund: 0, totalRefundPartial: 0, totalRefundCanceled: 0 };
+            }
+            refundDomainMap[domain].totalRefund += r.tongtien;
+            if (status === 'Partial') refundDomainMap[domain].totalRefundPartial += r.tongtien;
+            if (status === 'Canceled') refundDomainMap[domain].totalRefundCanceled += r.tongtien;
+        });
+        // Gắn tổng tiền hoàn vào từng domain
+        revenueAgg.forEach(item => {
+            const refund = refundDomainMap[item._id] || {};
+            item.totalRefund = refund.totalRefund || 0;
+            item.totalRefundPartial = refund.totalRefundPartial || 0;
+            item.totalRefundCanceled = refund.totalRefundCanceled || 0;
+        });
         // Tổng lợi nhuận tất cả DomainSmm trong range
         const tongdoanhthu = revenueAgg.reduce((sum, item) => sum + (item.totalLai || 0), 0);
 
