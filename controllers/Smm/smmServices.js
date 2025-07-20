@@ -46,6 +46,10 @@ class SmmApiService {
     return this.connect({ action: 'refill_status', refills: refillIds.join(',') });
   }
 
+  async cancel2(orderIds) {
+    return this.connect({ action: 'cancel', order: orderIds });
+  }
+
   async cancel(orderIds) {
     return this.connect({ action: 'cancel', orders: orderIds.join(',') });
   }

@@ -20,7 +20,7 @@ exports.refillOrder = async (req, res) => {
 
         // Lấy config SmmSv theo domain
         const smmConfig = await SmmSv.findOne({ name: order.DomainSmm });
-        if (!smmConfig) return res.status(400).json({ error: 'Lỗi liên hệ admin!' });
+        if (!smmConfig) return res.status(400).json({ error: 'Lỗi liên hệ admin!1' });
         // Tạo instance SmmApiService
         const smmApi = new SmmApiService(smmConfig.url_api, smmConfig.api_token);
 
@@ -66,37 +66,69 @@ exports.cancelOrder = async (req, res) => {
 
         // Lấy config SmmSv theo domain
         const smmConfig = await SmmSv.findOne({ name: order.DomainSmm });
-        if (!smmConfig) return res.status(400).json({ error: 'Lỗi liên hệ admin!' });
+        if (!smmConfig) return res.status(400).json({ error: 'Lỗi liên hệ admin!1' });
         // Tạo instance SmmApiService
         const smmApi = new SmmApiService(smmConfig.url_api, smmConfig.api_token);
 
         // Gọi hàm cancel đến API thứ 3
-        const apiResult = await smmApi.cancel([order.orderId]);
-        // Xử lý trường hợp trả về mảng có cancel.error
+        let apiResult =await smmApi.cancel2(order.orderId); 
+        let cancelError = null;
         if (Array.isArray(apiResult)) {
-            const cancelError = apiResult[0]?.cancel?.error;
-            if (cancelError) {
-                return res.status(400).json({ success: false, error: "Lỗi thử lại, liên hệ admin" });
-            }
+            cancelError = apiResult[0]?.cancel?.error;
         } else if (apiResult.error) {
-            return res.status(400).json({ success: false, error: "Lỗi thử lại , liên hệ admin" });
+            cancelError = apiResult.error;
         }
-        const historyData = new HistoryUser({
-            username: order.username,
-            madon: order.Madon,
-            hanhdong: "Hủy đơn",
-            link: order.link,
-            tienhientai: user.balance,
-            tongtien: 0,
-            tienconlai: user.balance,
-            createdAt: new Date(),
-            mota: `Hủy đơn dịch vụ ${order.namesv} uid => ${order.link}`,
-        });
-        await historyData.save();
-        // Hủy đơn thành công, cập nhật trạng thái iscancel
-        order.iscancel = true;
-        await order.save();
-        res.json({ success: true, message: 'Đơn hàng đã được hủy thành công' });
+        // Nếu lỗi thì thử gọi cancel2
+        if (cancelError) {
+            let apiResult2 = await smmApi.cancel([order.orderId]);
+            let cancelError2 = null;
+            if (apiResult2) {
+                if (Array.isArray(apiResult2)) {
+                    cancelError2 = apiResult2[0]?.cancel?.error;
+                } else if (apiResult2.error) {
+                    cancelError2 = apiResult2.error;
+                }
+            } else {
+                cancelError2 = 'Lỗi thử lại, liên hệ admin2';
+            }
+            if (cancelError2) {
+                return res.status(404).json({ success: false, error: "Lỗi thử lại, liên hệ admin3" });
+            } else {
+                // cancel2 thành công
+                const historyData = new HistoryUser({
+                    username: order.username,
+                    madon: order.Madon,
+                    hanhdong: "Hủy đơn",
+                    link: order.link,
+                    tienhientai: user.balance,
+                    tongtien: 0,
+                    tienconlai: user.balance,
+                    createdAt: new Date(),
+                    mota: `Hủy đơn dịch vụ ${order.namesv} uid => ${order.link}`,
+                });
+                await historyData.save();
+                order.iscancel = true;
+                await order.save();
+                return res.json({ success: true, message: 'Đơn hàng đã được hủy thành công' });
+            }
+        } else {
+            // cancel thành công
+            const historyData = new HistoryUser({
+                username: order.username,
+                madon: order.Madon,
+                hanhdong: "Hủy đơn",
+                link: order.link,
+                tienhientai: user.balance,
+                tongtien: 0,
+                tienconlai: user.balance,
+                createdAt: new Date(),
+                mota: `Hủy đơn dịch vụ ${order.namesv} uid => ${order.link}`,
+            });
+            await historyData.save();
+            order.iscancel = true;
+            await order.save();
+            return res.json({ success: true, message: 'Đơn hàng đã được hủy thành công' });
+        }
     } catch (err) {
         res.status(500).json({ error: 'Lỗi liên hệ admin!' });
     }
