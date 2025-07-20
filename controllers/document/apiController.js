@@ -111,13 +111,10 @@ exports.AddOrder = async (req, res) => {
 
         const smm = new SmmApiService(smmSvConfig.url_api, smmSvConfig.api_token);
         const allServices = await smm.services();
-        console.log('Service from API:', serviceFromDb.serviceId);
 
-        console.log('All Services:', allServices);
         const serviceFromApi = allServices.find(
             s => s.service === Number(serviceFromDb.serviceId) || s.service === serviceFromDb.serviceId
         );
-        console.log('Service from API:', serviceFromApi);
         if (!serviceFromApi) throw new Error('lỗi khi mua dịch vụ, vui lòng ib admin11');
 
 
@@ -203,13 +200,8 @@ exports.AddOrder = async (req, res) => {
             mota: `Tăng ${serviceFromDb.maychu} ${serviceFromDb.name} thành công cho uid ${link}`,
         });
 
-        console.log('Order:', orderData);
-        console.log('History:', HistoryData);
-
         await orderData.save();
         await HistoryData.save();
-
-        console.log('Order saved successfully!');
 
         // --- Bước 8: Gửi thông báo về Telegram ---
         // Lấy cấu hình Telegram từ DB

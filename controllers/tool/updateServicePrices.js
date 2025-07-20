@@ -54,7 +54,7 @@ async function updateServicePrices() {
             }
             const apiRate = apiService.rate * smmSvConfig.tigia;
             const dbRate = serviceItem.rate;
-            console.log(`Kiểm tra dịch vụ: ${serviceItem.name} - Giá API: ${apiRate}, Giá CSDL: ${dbRate}`);
+            // console.log(`Kiểm tra dịch vụ: ${serviceItem.name} - Giá API: ${apiRate}, Giá CSDL: ${dbRate}`);
             // So sánh và cập nhật giá
             if (dbRate < apiRate) {
               let newRate = apiRate * (1 + Number(smmSvConfig.price_update) / 100); // cập nhật với tỷ lệ tăng đã cấu hình
@@ -62,7 +62,7 @@ async function updateServicePrices() {
               const oldRate = serviceItem.rate;
               serviceItem.rate = newRate;
               await serviceItem.save();
-              console.log(`Đã cập nhật giá của ${serviceItem.name} thành ${newRate}`);
+              // console.log(`Đã cập nhật giá của ${serviceItem.name} thành ${newRate}`);
 
               // Gửi thông báo Telegram nếu có cấu hình (TĂNG GIÁ)
               const teleConfig = await Telegram.findOne();
@@ -104,7 +104,7 @@ async function updateServicePrices() {
               const oldRate = serviceItem.rate;
               serviceItem.rate = newRate;
               await serviceItem.save();
-              console.log(`Đã giảm giá của ${serviceItem.name} thành ${newRate}`);
+              // console.log(`Đã giảm giá của ${serviceItem.name} thành ${newRate}`);
 
               // Gửi thông báo Telegram nếu có cấu hình (GIẢM GIÁ)
               const teleConfig = await Telegram.findOne();
@@ -142,7 +142,7 @@ async function updateServicePrices() {
                 serviceItem.originalRate = apiRate;
                 await serviceItem.save();
               }
-              console.log(`Giá của ${serviceItem.name} đã bằng hoặc cao hơn giá API, bỏ qua cập nhật.`);
+              // console.log(`Giá của ${serviceItem.name} đã bằng hoặc cao hơn giá API, bỏ qua cập nhật.`);
             }
           } catch (innerError) {
             console.error(`Lỗi khi xử lý dịch vụ ${serviceItem.name}:`, innerError.message);

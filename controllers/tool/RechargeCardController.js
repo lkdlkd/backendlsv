@@ -31,11 +31,11 @@ exports.rechargeCardStatus = async () => {
         const partner_id = configCard.PARTNER_ID;
         const partner_key = configCard.PARTNER_KEY;
         const apiUrl = `${configCard.API_URLCARD}/chargingws/v2`;
-        console.log("Cấu hình đối tác:", {
-            partner_id,
-            partner_key,
-            apiUrl
-        });
+        // console.log("Cấu hình đối tác:", {
+        //     partner_id,
+        //     partner_key,
+        //     apiUrl
+        // });
         for (const card of pendingCards) {
             try {
                 // Kiểm tra nếu card không tồn tại hoặc thiếu thông tin cần thiết

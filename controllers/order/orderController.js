@@ -161,7 +161,6 @@ async function addOrder(req, res) {
       comments: formattedComments,
     };
     const purchaseResponse = await smm.order(purchasePayload);
-    console.log(purchaseResponse);
     if (!purchaseResponse || !purchaseResponse.order) {
       throw new Error('Lỗi khi mua dịch vụ, vui lòng ib admin');
     }

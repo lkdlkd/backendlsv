@@ -32,8 +32,6 @@ exports.createTransaction = async (req, res) => {
       trans_id = lastTransaction.tran_id + 1;
     }
 
-    console.log("Request ID:", request_id);
-    console.log(trans_id);
     // Lấy cấu hình từ ConfigCard
     const configCard = await ConfigCard.findOne();
     if (!configCard) {
@@ -71,9 +69,7 @@ exports.createTransaction = async (req, res) => {
     const cardInfo = await Card.findOne({ telco: card_type }).sort({ fees: -1 });
     const percent_card = cardInfo ? Number(cardInfo.fees) : 0;
     const chietkhau = card_value - (card_value * percent_card) / 100;
-    console.log("Chiet khau:", response);
-    console.log("dataa:", response.data);
-    console.log("status:", response.data.status);
+
 
     if (response.data.status === 3) {
       return res.status(500).json({ error: "Thẻ lỗi, kiểm tra lại thẻ" });

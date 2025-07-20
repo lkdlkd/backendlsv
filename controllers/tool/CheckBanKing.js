@@ -40,14 +40,14 @@ async function extractUsername(description) {
         // Lấy giá trị cuphap từ Configweb
         const config = await Configweb.findOne();
         const cuphap = config?.cuphap || "naptien"; // Sử dụng "naptien" làm giá trị mặc định nếu không có
-        console.log(`Cuphap: ${cuphap}`); // In ra giá trị cuphap để kiểm tra
-        console.log(`Mô tả: ${description}`); // In ra mô tả để kiểm tra
+        // console.log(`Cuphap: ${cuphap}`); // In ra giá trị cuphap để kiểm tra
+        // console.log(`Mô tả: ${description}`); // In ra mô tả để kiểm tra
 
         // Tạo regex động dựa trên giá trị cuphap, chỉ lấy từ sau cuphap không chứa ký tự đặc biệt
         const regex = new RegExp(`${cuphap}\\s+([a-zA-Z0-9_]+)`, "i");
         const match = description.match(regex);
-        console.log(`Regex: ${regex}`); // In ra regex để kiểm tra
-        console.log(`Match: ${match}`); // In ra kết quả match để kiểm tra
+        // console.log(`Regex: ${regex}`); // In ra regex để kiểm tra
+        // console.log(`Match: ${match}`); // In ra kết quả match để kiểm tra
 
         return match ? match[1] : null;
     } catch (error) {
