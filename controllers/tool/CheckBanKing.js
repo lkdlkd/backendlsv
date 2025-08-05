@@ -168,12 +168,12 @@ cron.schedule('*/30 * * * * *', async () => {
                             const teleConfig = await Telegram.findOne();
                             if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                                 const telegramMessage =
-                                    `📌 *NẠP TIỀN THÀNH CÔNG!*\n\n` +
-                                    `📌 *Trans_id : * ${trans.transactionID || "khong co"}\n` +
+                                    `📌 *NẠP TIỀN THÀNH CÔNG!*\n` +
+                                    `📌 *Trans_id:* ${trans.transactionID || "khong co"}\n` +
                                     `👤 *Khách hàng:* ${username}\n` +
-                                    `💰 *Số tiền nạp:* ${amount}\n` +
+                                    `💰 *Số tiền nạp:* ${amount.toLocaleString()}\n` +
                                     `🎁 *Khuyến mãi:* ${bonus}\n` +
-                                    `🔹 *Tổng cộng:* ${totalAmount}\n` +
+                                    `🔹 *Tổng cộng:* ${totalAmount.toLocaleString()}\n` +
                                     `🔹 *Số dư:* ${user.balance.toLocaleString()} VNĐ\n` +
                                     `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                                         day: "2-digit",

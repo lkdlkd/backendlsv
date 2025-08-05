@@ -132,7 +132,7 @@ exports.register = async (req, res) => {
       // Giờ Việt Nam (UTC+7)
       const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000);
       const telegramMessage =
-        `📌 *Có khách mới được tạo!*\n\n` +
+        `📌 *Có khách mới được tạo!*\n` +
         `👤 *Khách hàng:* ${username}\n` +
         `🔹 *Tạo lúc:* ${taoluc.toLocaleString("vi-VN", {
           day: "2-digit",
@@ -283,7 +283,7 @@ exports.addBalance = async (req, res) => {
       // Giờ Việt Nam (UTC+7)
       const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000);
       const telegramMessage =
-        `📌 *Cộng tiền!*\n\n` +
+        `📌 *Cộng tiền!*\n` +
         `👤 *Khách hàng:* ${updatedUser.username}\n` +
         `👤 *Cộng tiền:*  Admin đã cộng thành công số tiền ${amount}.\n` +
         `🔹 *Tạo lúc:* ${taoluc.toLocaleString("vi-VN", {
@@ -367,7 +367,7 @@ exports.deductBalance = async (req, res) => {
       // Giờ Việt Nam (UTC+7)
       const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000);
       const telegramMessage =
-        `📌 *Trừ tiền!*\n\n` +
+        `📌 *Trừ tiền!*\n` +
         `👤 *Khách hàng:* ${updatedUser.username}\n` +
         `💸 *Số tiền trừ:* Admin đã trừ thành công số tiền ${amount}.\n` +
         `🔹 *Tạo lúc:* ${taoluc.toLocaleString("vi-VN", {

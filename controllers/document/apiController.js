@@ -209,15 +209,15 @@ exports.AddOrder = async (req, res) => {
         if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
             // Giờ Việt Nam (UTC+7)
             const createdAtVN = new Date(createdAt.getTime() + 7 * 60 * 60 * 1000);
-            const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n\n` +
+            const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n` +
                 `👤 *Khách hàng:* ${username}\n` +
+                `🆔 *Mã đơn:* ${newMadon}\n` +
                 `🔹 *Dịch vụ:* ${serviceFromDb.name}\n` +
                 `🔗 *Link:* ${link}\n` +
                 `📌 *Số lượng:* ${qty}\n` +
                 `💰 *Tiền cũ:* ${(user.balance + totalCost).toLocaleString()} VNĐ\n` +
                 `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
                 `💰 *TIền còn lại:* ${newBalance.toLocaleString()} VNĐ\n` +
-                `🆔 *Mã đơn:* ${newMadon}\n` +
                 `📆 *Ngày tạo:* ${createdAtVN.toLocaleString("vi-VN", {
                     day: "2-digit",
                     month: "2-digit",

@@ -56,7 +56,11 @@ async function updateServicePrices() {
             const dbRate = serviceItem.rate;
             // console.log(`Kiểm tra dịch vụ: ${serviceItem.name} - Giá API: ${apiRate}, Giá CSDL: ${dbRate}`);
             // So sánh và cập nhật giá
-            if (dbRate < apiRate) {
+            if ( 
+              typeof serviceItem.originalRate === 'number' &&
+              dbRate < apiRate &&
+              smmSvConfig.update_price === "on"
+            ) {
               let newRate = apiRate * (1 + Number(smmSvConfig.price_update) / 100); // cập nhật với tỷ lệ tăng đã cấu hình
               newRate = Math.round(newRate * 10000) / 10000; // Làm tròn 4 chữ số thập phân
               const oldRate = serviceItem.rate;
@@ -68,11 +72,11 @@ async function updateServicePrices() {
               const teleConfig = await Telegram.findOne();
               const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
               if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
-                const telegramMessage = `📌 *Cập nhật giá TĂNG!*\n\n` +
+                const telegramMessage = `📌 *Cập nhật giá TĂNG!*\n` +
                   `👤 *Dịch vụ:* ${serviceItem.name}\n` +
                   `🔹 *Giá cũ:* ${oldRate}\n` +
                   `🔹 *Giá mới:* ${newRate}\n` +
-                  `🔹 *Site:* ${smmSvConfig.name}\n` +
+                  `🔹 *Nguồn:* ${smmSvConfig.name}\n` +
                   `🔹 *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                     day: "2-digit",
                     month: "2-digit",
@@ -110,11 +114,11 @@ async function updateServicePrices() {
               const teleConfig = await Telegram.findOne();
               const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
               if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
-                const telegramMessage = `📌 *Cập nhật giá GIẢM!*\n\n` +
+                const telegramMessage = `📌 *Cập nhật giá GIẢM!*\n` +
                   `👤 *Dịch vụ:* ${serviceItem.name}\n` +
                   `🔹 *Giá cũ:* ${oldRate}\n` +
                   `🔹 *Giá mới:* ${newRate}\n` +
-                  `🔹 *Site:* ${smmSvConfig.name}\n` +
+                  `🔹 *Nguồn:* ${smmSvConfig.name}\n` +
                   `🔹 *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                     day: "2-digit",
                     month: "2-digit",

@@ -117,7 +117,7 @@ exports.rechargeCardStatus = async () => {
                         const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
                         if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                             const telegramMessage =
-                                `📌 *NẠP TIỀN!*\n\n` +
+                                `📌 *NẠP TIỀN THẺ CÀO!*\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
                                 `👤 *Cộng tiền:* nạp thẻ thành công số tiền ${chietkhau}.\n` +
                                 `🔹 *Tạo lúc:* ${taoluc.toLocaleString("vi-VN", {
@@ -178,7 +178,8 @@ exports.rechargeCardStatus = async () => {
                         const teleConfig = await Telegram.findOne();
                         const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
                         if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
-                            const telegramMessage = `📌 *Cộng tiền!*\n\n` +
+                            const telegramMessage =
+                                `📌 *NẠP TIỀN THẺ CÀO!*\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
                                 `👤 *Cộng tiền:*  nạp thẻ thành công số tiền  ${chietkhau2} và sai mệnh giá.\n` +
                                 `🔹 *Tạo lúc:* ${taoluc.toLocaleString("vi-VN", {

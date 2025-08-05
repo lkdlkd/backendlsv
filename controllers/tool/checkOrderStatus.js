@@ -143,10 +143,11 @@ async function checkOrderStatus() {
               const teleConfig = await Telegram.findOne();
               if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                 const telegramMessage =
-                  `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
+                  `📌 *THÔNG BÁO HOÀN TIỀN!*\n` +
                   `👤 *Khách hàng:* ${order.username}\n` +
                   `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
-                  `🔹 *Tướng ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
+                  `🔹 *Tương ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
+                  `🔸 *Dịch vụ:* ${order.namesv}\n` +
                   `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                     day: "2-digit",
                     month: "2-digit",
@@ -204,10 +205,11 @@ async function checkOrderStatus() {
               const teleConfig = await Telegram.findOne();
               if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                 const telegramMessage =
-                  `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
+                  `📌 *THÔNG BÁO HOÀN TIỀN!*\n` +
                   `👤 *Khách hàng:* ${order.username}\n` +
                   `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
-                  `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
+                  `🔹 *Tương ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
+                  `🔸 *Dịch vụ:* ${order.namesv}\n` +
                   `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                     day: "2-digit",
                     month: "2-digit",
@@ -305,10 +307,11 @@ async function checkOrderStatus() {
                   const teleConfig = await Telegram.findOne();
                   if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                     const telegramMessage =
-                      `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
+                      `📌 *THÔNG BÁO HOÀN TIỀN!*\n` +
                       `👤 *Khách hàng:* ${order.username}\n` +
                       `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
-                      `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
+                      `🔹 *Tương ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
+                      `🔸 *Dịch vụ:* ${order.namesv}\n` +
                       `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                         day: "2-digit",
                         month: "2-digit",
@@ -367,10 +370,11 @@ async function checkOrderStatus() {
                   const teleConfig = await Telegram.findOne();
                   if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                     const telegramMessage =
-                      `📌 *THÔNG BÁO HOÀN TIỀN!*\n\n` +
+                      `📌 *THÔNG BÁO HOÀN TIỀN!*\n` +
                       `👤 *Khách hàng:* ${order.username}\n` +
                       `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
-                      `🔹 *Tướng ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
+                      `🔹 *Tương ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
+                      `🔸 *Dịch vụ:* ${order.namesv}\n` +
                       `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                         day: "2-digit",
                         month: "2-digit",

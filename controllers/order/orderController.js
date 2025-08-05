@@ -9,7 +9,7 @@ const Telegram = require('../../models/Telegram');
 // Lấy đơn hàng theo category, user, và từ khóa tìm kiếm (phân trang)
 async function getOrders(req, res) {
   const user = req.user;
-  const { category, search , status } = req.query;
+  const { category, search, status } = req.query;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
@@ -152,7 +152,7 @@ async function addOrder(req, res) {
       throw new Error('Dịch vụ bảo trì, vui lòng liên hệ admin');
     }
     const lai = totalCost - (apiRate * qty);
-    const tientieu =  apiRate * qty ;
+    const tientieu = apiRate * qty;
     // Gửi yêu cầu mua dịch vụ
     const purchasePayload = {
       link,
@@ -191,7 +191,7 @@ async function addOrder(req, res) {
       ObjectLink,
       comments: formattedComments,
       DomainSmm: serviceFromDb.DomainSmm,
-      tientieu : tientieu,
+      tientieu: tientieu,
       lai: lai,
       refil: serviceFromDb.refil,
       cancel: serviceFromDb.cancel,
@@ -217,15 +217,15 @@ async function addOrder(req, res) {
     if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
       // Giờ Việt Nam (UTC+7)
       const createdAtVN = new Date(createdAt.getTime() + 7 * 60 * 60 * 1000);
-      const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n\n` +
+      const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n` +
         `👤 *Khách hàng:* ${username}\n` +
+        `🆔 *Mã đơn:* ${newMadon}\n` +
         `🔹 *Dịch vụ:* ${serviceFromDb.maychu} ${serviceFromDb.name}\n` +
         `🔗 *Link:* ${link}\n` +
         `📌 *Số lượng:* ${qty}\n` +
         `💰 *Tiền cũ:* ${(user.balance + totalCost).toLocaleString()} VNĐ\n` +
         `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
         `💰 *Tiền còn lại:* ${newBalance.toLocaleString()} VNĐ\n` +
-        `🆔 *Mã đơn:* ${newMadon}\n` +
         `📆 *Ngày tạo:* ${createdAtVN.toLocaleString("vi-VN", {
           day: "2-digit",
           month: "2-digit",
