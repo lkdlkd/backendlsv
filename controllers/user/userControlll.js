@@ -91,8 +91,8 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: "Mật khẩu phải có ít nhất 6 ký tự" });
     }
 
-    // Kiểm tra username không chứa ký tự đặc biệt (chỉ cho phép chữ, số và gạch dưới)
-    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    // Kiểm tra username chỉ chứa chữ và số (không cho phép ký tự đặc biệt hoặc gạch dưới)
+    const usernameRegex = /^[a-zA-Z0-9]+$/;
     if (!usernameRegex.test(username)) {
       return res.status(400).json({ error: "Tên người dùng không được chứa ký tự đặc biệt" });
     }
