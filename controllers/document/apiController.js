@@ -353,6 +353,95 @@ exports.getOrderStatus = async (req, res) => {
         });
     }
 };
+exports.cancelOrder = async (req, res) => {
+    try {
+        const { key, order } = req.body;
+        if (!key) return res.status(400).json({ error: 'Thiếu api key' });
+        const user = await User.findOne({ apiKey: key });
+        if (!user) return res.status(401).json({ error: 'Không tìm thấy người dùng' });
+        if (!order) return res.status(400).json({ error: 'Thiếu mã đơn' });
+
+        // Tìm đơn hàng theo order
+        const orders = await Order.findOne({ Madon: order });
+        if (!orders) return res.status(404).json({ order : order , cancel : { error: 'Không tìm thấy đơn hàng' } });
+        if (orders.iscancel) return res.status(400).json({ order : order , cancel : { error: 'Đơn hàng đã được hủy' } });
+        if(orders.status === "Completed") return res.status(400).json({ order : orders.Madon , cancel : { error: 'Đơn hàng đã hoàn thành không thể hủy' } });
+        if(orders.status === "Partial" || orders.status === "Canceled") return res.status(400).json({ order : orders.Madon , cancel : { error: 'Đơn hàng đã được hủy' } });    
+        if (orders.cancel !== "on") return res.status(400).json({ order : orders.Madon , cancel : { error: 'Đơn hàng không hỗ trợ hủy' } });
+        // Kiểm tra quyền hủy đơn
+        if (user.role !== 'admin' && orders.username !== user.username) {
+            return res.status(403).json({ order : orders.Madon , cancel : { error: 'Đơn hàng không thể hủy' } });
+        }
+
+        // Lấy config SmmSv theo domain
+        const smmConfig = await SmmSv.findOne({ name: orders.DomainSmm });
+        if (!smmConfig) return res.status(400).json({ order : orders.Madon , cancel : { error: 'Đơn hàng không thể hủy' } });
+        // Tạo instance SmmApiService
+        const smmApi = new SmmApiService(smmConfig.url_api, smmConfig.api_token);
+
+        // Gọi hàm cancel đến API thứ 3
+        let apiResult = await smmApi.cancel2(orders.orderId);
+        let cancelError = null;
+        if (Array.isArray(apiResult)) {
+            cancelError = apiResult[0]?.cancel?.error;
+        } else if (apiResult.error) {
+            cancelError = apiResult.error;
+        }
+        // Nếu lỗi thì thử gọi cancel2
+        if (cancelError) {
+            let apiResult2 = await smmApi.cancel([orders.orderId]);
+            let cancelError2 = null;
+            if (apiResult2) {
+                if (Array.isArray(apiResult2)) {
+                    cancelError2 = apiResult2[0]?.cancel?.error;
+                } else if (apiResult2.error) {
+                    cancelError2 = apiResult2.error;
+                }
+            } else {
+                cancelError2 = 'đơn hàng không thể hủy';
+            }
+            if (cancelError2) {
+                return res.status(404).json({ order : orders.Madon , cancel : { error: 'đơn hàng không thể hủy' } });
+            } else {
+                // cancel2 thành công
+                const historyData = new HistoryUser({
+                    username: orders.username,
+                    madon: orders.Madon,
+                    hanhdong: "Hủy đơn",
+                    link: orders.link,
+                    tienhientai: user.balance,
+                    tongtien: 0,
+                    tienconlai: user.balance,
+                    createdAt: new Date(),
+                    mota: `Hủy đơn dịch vụ ${orders.namesv} uid => ${orders.link}`,
+                });
+                await historyData.save();
+                orders.iscancel = true;
+                await orders.save();
+                return res.json({ order : orders.Madon , canecel : 1 });
+            }
+        } else {
+            // cancel thành công
+            const historyData = new HistoryUser({
+                username: orders.username,
+                madon: orders.Madon,
+                hanhdong: "Hủy đơn",
+                link: orders.link,
+                tienhientai: user.balance,
+                tongtien: 0,
+                tienconlai: user.balance,
+                createdAt: new Date(),
+                mota: `Hủy đơn dịch vụ ${orders.namesv} uid => ${orders.link}`,
+            });
+            await historyData.save();
+            orders.iscancel = true;
+            await orders.save();
+            return res.json({ order : orders.Madon , canecel : 1 });
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Lỗi liên hệ admin!' });
+    }
+};
 
 exports.getme = async (req, res) => {
     try {
@@ -411,8 +500,10 @@ exports.routeRequest = async (req, res) => {
     } else if (action === 'balance') {
         // Gọi hàm tạo get trạng thái
         return exports.getme(req, res);
-    }
-    else {
+    } else if (action === 'cancel') {
+        // Gọi hàm hủy đơn hàng
+        return exports.cancelOrder(req, res);
+    } else {
         return res.status(400).json({ error: "Action không hợp lệ" });
     }
 };
