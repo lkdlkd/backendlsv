@@ -51,22 +51,28 @@ async function checkOrderStatus() {
       let service = serviceCache[order.SvID];
       if (!service) {
         service = await Service.findOne({ serviceId: order.SvID });
-        if (!service) {
-          console.warn(`Không tìm thấy dịch vụ cho đơn ${order.Madon} (namesv: ${order.namesv})`);
-          continue;
+        if (service) {
+          serviceCache[order.SvID] = service;
+        } else {
+          console.warn(`Không tìm thấy Service cho đơn ${order.Madon} (SvID: ${order.SvID}, namesv: ${order.namesv})`);
         }
-        serviceCache[order.SvID] = service;
+      }
+      // Lấy DomainSmm: ưu tiên từ Service, nếu không có thì lấy từ Order
+      const domainSmm = service && service.DomainSmm ? service.DomainSmm : order.DomainSmm;
+      if (!domainSmm) {
+        console.warn(`Không tìm thấy DomainSmm cho đơn ${order.Madon} (SvID: ${order.SvID}, namesv: ${order.namesv})`);
+        continue;
       }
 
       // Cache SmmSv
-      let smmConfig = smmConfigCache[service.DomainSmm];
+      let smmConfig = smmConfigCache[domainSmm];
       if (!smmConfig) {
-        smmConfig = await SmmSv.findOne({ name: service.DomainSmm });
+        smmConfig = await SmmSv.findOne({ name: domainSmm });
         if (!smmConfig || !smmConfig.url_api || !smmConfig.api_token) {
-          console.warn(`Cấu hình SMM không hợp lệ cho dịch vụ ${service.name}`);
+          // Nếu không có cấu hình SMM thì bỏ qua đơn này
           continue;
         }
-        smmConfigCache[service.DomainSmm] = smmConfig;
+        smmConfigCache[domainSmm] = smmConfig;
       }
 
       const groupKey = smmConfig._id.toString();
