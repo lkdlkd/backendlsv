@@ -92,7 +92,7 @@ router.get('/configtele', authenticate.authenticateAdmin, configTeleController.g
 router.put('/configtele',authenticate.authenticateAdmin, configTeleController.updateTelegramConfig);
 
 // Route để lấy số dư từ SMM
-router.get('/getbalance/:id', authenticate.authenticateAdmin, SmmController.getBalance);
+// router.get('/getbalance/:id', authenticate.authenticateAdmin, SmmController.getBalance);
 // Route để lấy danh sách dịch vụ từ SMM
 router.get('/getservices/:id', authenticate.authenticateAdmin, SmmController.getServices);
 router.get('/transactions', authenticate.authenticateUser, banking.getTransactions);

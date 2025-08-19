@@ -1,4 +1,5 @@
 const SmmSv = require("../../models/SmmSv");
+const SmmApiService = require('../../controllers/Smm/smmServices'); // Đảm bảo đường dẫn đúng đến SmmApiService
 
 // Thêm mới một đối tác SMM
 exports.createPartner = async (req, res) => {
@@ -23,7 +24,23 @@ exports.getAllPartners = async (req, res) => {
             return res.status(403).json({ error: "Chỉ admin mới có quyền sử dụng chức năng này" });
         }
         const partners = await SmmSv.find();
-        res.status(200).json(partners);
+        // Nếu có SmmApiService, lấy balance cho từng partner đang hoạt động
+        const partnersWithBalance = await Promise.all(partners.map(async (partner) => {
+            let balance = null;
+            if (partner.status === 'on' && partner.url_api && partner.api_token) {
+                try {
+                    const smmService = new SmmApiService(partner.url_api, partner.api_token);
+                    const balanceData = await smmService.balance();
+                    console.log(balanceData);
+                    balance = balanceData.balance * partner.tigia || 1;
+                } catch (err) {
+                    balance = { error: err.message };
+                }
+            }
+            
+            return { ...partner.toObject(), balance };
+        }));
+        res.status(200).json(partnersWithBalance);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
