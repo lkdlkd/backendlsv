@@ -22,7 +22,7 @@ const serviceSchema = new mongoose.Schema({
   serviceId: { type: String, required: true },//sv ở bên thứ 3
   //option
   refil: { type: String, enum: ["on", "off"], default: "off" },//chức năng refil
-  cancel : { type: String, enum: ["on", "off"], default: "off" },//chức năng hủy đơn
+  cancel: { type: String, enum: ["on", "off"], default: "off" },//chức năng hủy đơn
   getid: { type: String, enum: ["on", "off"], default: "on" },//chức năng get id sau khi nhập link mua
   comment: { type: String, enum: ["on", "off"], default: "off" },//chức năng get id sau khi nhập link mua
   reaction: { type: String, enum: ["on", "off"], default: "off" },//chức năng get id sau khi nhập link mua
@@ -65,9 +65,14 @@ serviceSchema.statics.updateTocDoDuKien = async function (magoi) {
     const soLuongGoc = Number(order.quantity || 0);
     return soLuong >= soLuongGoc;
   });
+  let avgSpeedStr = '';
 
-  // Nếu không có đơn nào hợp lệ, trả về "chưa cập nhật"
-  if (!orders.length) return "chưa cập nhật";
+  // Nếu không có đơn nào hợp lệ, cập nhật và trả về "Chưa cập nhật"
+  const updateQuery = { Magoi: magoi };
+  if (!orders.length) {
+    await this.updateOne(updateQuery, { tocdodukien: "Chưa cập nhật" });
+    return "Chưa cập nhật";
+  }
 
   let totalSoLuong = 0;
   let totalTimeSeconds = 0;
@@ -83,10 +88,16 @@ serviceSchema.statics.updateTocDoDuKien = async function (magoi) {
     totalSoLuong += soLuong;
   }
 
-  if (totalSoLuong === 0 || totalTimeSeconds === 0) return "chưa cập nhật";
+  if (totalSoLuong === 0 || totalTimeSeconds === 0) {
+    await this.updateOne(updateQuery, { tocdodukien: "Chưa cập nhật" });
+    return "Chưa cập nhật";
+  }
 
   const secondsPer1000 = (totalTimeSeconds / totalSoLuong) * 1000;
-  if (!isFinite(secondsPer1000)) return "chưa cập nhật";
+  if (!isFinite(secondsPer1000)) {
+    await this.updateOne(updateQuery, { tocdodukien: "Chưa cập nhật" });
+    return "Chưa cập nhật";
+  }
 
   const amountPerHour = Math.round((3600 / secondsPer1000) * 1000);
 
@@ -95,14 +106,13 @@ serviceSchema.statics.updateTocDoDuKien = async function (magoi) {
   const minutes = Math.floor((secondsPer1000 % 3600) / 60);
   const seconds = Math.floor(secondsPer1000 % 60);
 
-  let avgSpeedStr = '';
   if (hours > 0) avgSpeedStr += `${hours}h `;
   if (minutes > 0 || hours > 0) avgSpeedStr += `${minutes}m `;
   avgSpeedStr += `${seconds}s/1000`;
   avgSpeedStr += `  ( số lượng ~${amountPerHour.toLocaleString()}/h)`;
 
   // Cập nhật vào field `tocdodukien`
-  const updateQuery = { Magoi: magoi };
+  // const updateQuery = { Magoi: magoi };
   await this.updateOne(updateQuery, { tocdodukien: avgSpeedStr });
   return avgSpeedStr;
 };
