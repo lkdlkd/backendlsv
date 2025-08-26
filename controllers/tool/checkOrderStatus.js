@@ -130,7 +130,8 @@ async function checkOrderStatus() {
                   // console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
                   continue;
                 }
-                const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
+                const soTienHoanFormatted = Number(Math.floor(Number(soTienHoan))).toLocaleString("en-US");
+
                 if (smmConfig && smmConfig.autohoan === 'on') {
                   // Lưu vào Refund với status true
                   await Refund.create({
@@ -247,7 +248,7 @@ async function checkOrderStatus() {
                   // console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
                   continue;
                 }
-                const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
+                const soTienHoanFormatted = Number(Math.floor(Number(soTienHoan))).toLocaleString("en-US");
                 if (smmConfig && smmConfig.autohoan === 'on') {
                   await Refund.create({
                     username: order.username,

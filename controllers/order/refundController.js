@@ -8,11 +8,13 @@ const axios = require('axios');
 exports.getRefunds = async (req, res) => {
     try {
         const user = req.user;
+        const { status } = req.query;
+
         let filter = {};
         if (!user) {
             return res.status(401).json({ error: 'Không xác thực được người dùng' });
         }
-        filter.status = false;
+        filter.status = status ;
         const refunds = await Refund.find(filter).sort({ createdAt: -1 });
         return res.status(200).json({ success: true, data: refunds });
     } catch (error) {
