@@ -20,7 +20,7 @@ const { createPromotion, updatePromotion, deletePromotion, getPromotions } = req
 const SmmController = require('../controllers/Smm/Smm');
 const refillCancelController = require('../controllers/order/RefilandCancelController');
 
-const refund = require('../controllers/order/RefundController');
+const refund = require('@/controllers/order/refundController');
 
 router.get('/refund', authenticate.authenticateAdmin, refund.getRefunds);
 router.post('/refund/approve', authenticate.authenticateAdmin, refund.adminApproveRefund);
