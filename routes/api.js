@@ -20,6 +20,10 @@ const { createPromotion, updatePromotion, deletePromotion, getPromotions } = req
 const SmmController = require('../controllers/Smm/Smm');
 const refillCancelController = require('../controllers/order/RefilandCancelController');
 
+const refund = require('../controllers/order/RefundController');
+
+router.get('/refund', authenticate.authenticateAdmin, refund.getRefunds);
+router.post('/refund/approve', authenticate.authenticateAdmin, refund.adminApproveRefund);
 router.post('/refill', authenticate.authenticateUser, refillCancelController.refillOrder); // ok Thực hiện refill đơn hàng
 router.post('/cancel', authenticate.authenticateUser, refillCancelController.cancelOrder); // ok Thực hiện hủy đơn hàng
 //auth

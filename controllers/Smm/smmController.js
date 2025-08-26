@@ -31,7 +31,6 @@ exports.getAllPartners = async (req, res) => {
                 try {
                     const smmService = new SmmApiService(partner.url_api, partner.api_token);
                     const balanceData = await smmService.balance();
-                    console.log(balanceData);
                     balance = balanceData.balance * partner.tigia || 1;
                 } catch (err) {
                     balance = { error: err.message };

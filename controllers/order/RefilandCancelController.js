@@ -2,7 +2,7 @@ const Order = require('../../models/Order');
 const SmmSv = require('../../models/SmmSv');
 const SmmApiService = require('../Smm/smmServices');
 const HistoryUser = require('../../models/History');
-
+// const Refill = require('../../models/Refill');
 exports.refillOrder = async (req, res) => {
     try {
         const { madon } = req.body;
@@ -42,6 +42,18 @@ exports.refillOrder = async (req, res) => {
             mota: `Bảo hành dịch vụ ${order.namesv} thành công cho uid ${order.link}`,
         });
         await historyData.save();
+        // const refillData = new Refill({
+        //     username: order.username,
+        //     mabaohanh: apiResult.refill, // Mã bảo hành từ API
+        //     madon: order.Madon,
+        //     link: order.link,
+        //     server: order.namesv,
+        //     soluongmua: order.quantity,
+        //     goc: order.start,
+        //     thoigianmua: order.createdAt,
+        //     trangthai: 'pending', // Trạng thái ban đầu
+        // });
+        // await refillData.save();
         res.json({ success: true, message: 'Đơn hàng đã được bảo hành thành công' });
     } catch (err) {
         res.status(500).json({ error: 'Lỗi liên hệ admin!' });
@@ -63,7 +75,12 @@ exports.cancelOrder = async (req, res) => {
         if (user.role !== 'admin' && order.username !== user.username) {
             return res.status(403).json({ success: false, error: 'Bạn không có quyền thực hiện!' });
         }
-
+        if (order.iscancel) {
+            return res.status(400).json({ success: false, error: 'Đơn hàng đã được hủy!' });
+        }
+        if (order.status === "Completed") return res.status(400).json({success: false, error: 'Đơn hàng đã hoàn thành không thể hủy' });
+        if (order.status === "Partial" || order.status === "Canceled") return res.status(400).json({success: false, error: 'Đơn hàng đã được hủy' });
+        if (order.cancel !== "on") return res.status(400).json({success: false, error: 'Đơn hàng không hỗ trợ hủy' });
         // Lấy config SmmSv theo domain
         const smmConfig = await SmmSv.findOne({ name: order.DomainSmm });
         if (!smmConfig) return res.status(400).json({ error: 'Lỗi liên hệ admin!1' });
@@ -71,7 +88,7 @@ exports.cancelOrder = async (req, res) => {
         const smmApi = new SmmApiService(smmConfig.url_api, smmConfig.api_token);
 
         // Gọi hàm cancel đến API thứ 3
-        let apiResult =await smmApi.cancel2(order.orderId); 
+        let apiResult = await smmApi.cancel2(order.orderId);
         let cancelError = null;
         if (Array.isArray(apiResult)) {
             cancelError = apiResult[0]?.cancel?.error;
@@ -92,7 +109,7 @@ exports.cancelOrder = async (req, res) => {
                 cancelError2 = 'Lỗi thử lại, liên hệ admin2';
             }
             if (cancelError2) {
-                return res.status(404).json({ success: false, error: "Lỗi thử lại, liên hệ admin3" });
+                return res.status(404).json({ success: false, error: "Đơn hàng không thể hủy" });
             } else {
                 // cancel2 thành công
                 const historyData = new HistoryUser({

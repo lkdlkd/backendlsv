@@ -7,7 +7,7 @@ const User = require('../../models/User'); // Thêm dòng này ở đầu file �
 const HistoryUser = require('../../models/History');
 const axios = require('axios');
 const Telegram = require('../../models/Telegram');
-
+const Refund = require('../../models/Refund');
 function mapStatus(apiStatus) {
   switch (apiStatus) {
     case "Pending":
@@ -88,212 +88,66 @@ async function checkOrderStatus() {
     // Duyệt qua từng nhóm và gọi API kiểm tra trạng thái
     for (const groupKey in groups) {
       const { smmService, orders } = groups[groupKey];
+      const orderIds = orders.map(order => order.orderId);
+      const orderIdChunks = chunkArray(orderIds, 100);
+      let allData = {};
 
-      if (orders.length === 1) {
-        const order = orders[0];
-        // Lấy smmConfig từ cache theo groupKey
-        const smmConfig = smmConfigCache[order.DomainSmm] || null;
-        let phihoan = 1000;
-        if (smmConfig && typeof smmConfig.phihoan === 'number') phihoan = smmConfig.phihoan;
-
-        try {
-          const statusObj = await smmService.status(order.orderId);
-          // console.log(`API trả về cho đơn ${order.orderId}:`, statusObj);
-
-          const mappedStatus = mapStatus(statusObj.status);
-          if (mappedStatus !== null) order.status = mappedStatus;
-          if (statusObj.start_count !== undefined) order.start = statusObj.start_count;
-          if (
-            ['Pending', 'In progress', 'Processing'].includes(mappedStatus) &&
-            Number(statusObj.remains) === 0
-          ) {
-            order.dachay = 0;
-          } else if (statusObj.remains !== undefined) {
-            order.dachay = order.quantity - Number(statusObj.remains);
-          }
-          const user = await User.findOne({ username: order.username });
-          const tiencu = user.balance || 0;
-          if (mappedStatus === 'Partial') {
-            if (user) {
-              const soTienHoan = ((statusObj.remains || 0) * order.rate) - phihoan;
-              if ((soTienHoan) < 50) {
-                order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
-                await order.save();
-                // console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
-                continue;
-              }
-              let trangthai = false;
-              if (smmConfig && smmConfig.autohoan === 'on') {
-                user.balance = (user.balance || 0) + soTienHoan;
-                await user.save();
-                trangthai = true;
-              }
-              const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
-              const historyData = new HistoryUser({
-                username: order.username,
-                madon: order.Madon,
-                hanhdong: "Hoàn tiền",
-                link: order.link,
-                tienhientai: tiencu,
-                tongtien: soTienHoan,
-                tienconlai: trangthai ? user.balance : tiencu,
-                createdAt: new Date(),
-                mota: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và ${phihoan} phí dịch vụ${trangthai ? '' : ' (chờ duyệt)'}`,
-                trangthai: trangthai,
-              });
-              await historyData.save();
-              // console.log(`Đã ${trangthai ? 'hoàn tiền' : 'lưu chờ duyệt'} cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
-
-              const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
-              // Gửi thông báo Telegram nếu có cấu hình
-              const teleConfig = await Telegram.findOne();
-              if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
-                const telegramMessage =
-                  `📌 *THÔNG BÁO HOÀN TIỀN!*\n` +
-                  `👤 *Khách hàng:* ${order.username}\n` +
-                  `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
-                  `🔹 *Tương ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
-                  `🔸 *Dịch vụ:* ${order.namesv}\n` +
-                  `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })}\n`;
-                try {
-                  await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
-                    chat_id: teleConfig.chatId,
-                    text: telegramMessage,
-                    parse_mode: "Markdown",
-                  });
-                  console.log("Thông báo Telegram đã được gửi.");
-                } catch (telegramError) {
-                  console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
-                }
-              }
-              order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
+      for (const chunk of orderIdChunks) {
+        const data = await smmService.multiStatus(chunk);
+        allData = { ...allData, ...data };
+      }
+      // Xử lý kết quả multi status
+      for (const orderId in allData) {
+        if (allData.hasOwnProperty(orderId)) {
+          const statusObj = allData[orderId];
+          const order = orders.find(o => o.orderId.toString() === orderId);
+          if (order) {
+            // Lấy smmConfig từ cache
+            const smmConfig = smmConfigCache[order.DomainSmm] || null;
+            let phihoan = 1000;
+            if (smmConfig && typeof smmConfig.phihoan === 'number') phihoan = smmConfig.phihoan;
+            const mappedStatus = mapStatus(statusObj.status);
+            // console.log(`API trả về cho đơn ${orderId}:`, statusObj);
+            if (mappedStatus !== null) order.status = mappedStatus;
+            if (statusObj.start_count !== undefined) order.start = statusObj.start_count;
+            if (
+              ['Pending', 'In progress', 'Processing'].includes(mappedStatus) &&
+              Number(statusObj.remains) === 0
+            ) {
+              order.dachay = 0;
+            } else if (statusObj.remains !== undefined) {
+              order.dachay = order.quantity - Number(statusObj.remains);
             }
-          }
-          if (mappedStatus === 'Canceled') {
-            if (user) {
-              const soTienHoan = ((order.quantity || 0) * order.rate) - phihoan;
-              if ((soTienHoan) < 50) {
-                order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
-                await order.save();
-                console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
-                continue;
-              }
-              let trangthai = false;
-              if (smmConfig && smmConfig.autohoan === 'on') {
-                user.balance = (user.balance || 0) + soTienHoan;
-                await user.save();
-                trangthai = true;
-              }
-              const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
-              const historyData = new HistoryUser({
-                username: order.username,
-                madon: order.Madon,
-                hanhdong: "Hoàn tiền",
-                link: order.link,
-                tienhientai: tiencu,
-                tongtien: soTienHoan,
-                tienconlai: trangthai ? user.balance : tiencu,
-                createdAt: new Date(),
-                mota: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và ${phihoan} phí dịch vụ${trangthai ? '' : ' (chờ duyệt)'}`,
-                trangthai: trangthai,
-              });
-              await historyData.save();
-              // console.log(`Đã ${trangthai ? 'hoàn tiền' : 'lưu chờ duyệt'} cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
-              const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
-              // Gửi thông báo Telegram nếu có cấu hình
-              const teleConfig = await Telegram.findOne();
-              if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
-                const telegramMessage =
-                  `📌 *THÔNG BÁO HOÀN TIỀN!*\n` +
-                  `👤 *Khách hàng:* ${order.username}\n` +
-                  `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
-                  `🔹 *Tương ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
-                  `🔸 *Dịch vụ:* ${order.namesv}\n` +
-                  `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })}\n`;
-                try {
-                  await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
-                    chat_id: teleConfig.chatId,
-                    text: telegramMessage,
-                    parse_mode: "Markdown",
-                  });
-                  console.log("Thông báo Telegram đã được gửi.");
-                } catch (telegramError) {
-                  console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
+            // Nếu trạng thái là Canceled hoặc Partial thì hoàn tiền phần còn lại
+            const user = await User.findOne({ username: order.username });
+            const tiencu = user.balance || 0;
+            if (mappedStatus === 'Partial') {
+              if (user) {
+                const soTienHoan = ((statusObj.remains || 0) * order.rate) - phihoan;
+                if ((soTienHoan) < 50) {
+                  order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
+                  await order.save();
+                  // console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
+                  continue;
                 }
-              }
-              order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
-            }
-          }
-          await order.save();
-          // console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
-        } catch (apiError) {
-          console.error(`Lỗi API trạng thái cho đơn ${order.orderId}:`, apiError.message);
-        }
-      } else {
-        // Multi status
-        const orderIds = orders.map(order => order.orderId);
-        const orderIdChunks = chunkArray(orderIds, 100);
-        let allData = {};
-
-        for (const chunk of orderIdChunks) {
-          const data = await smmService.multiStatus(chunk);
-          allData = { ...allData, ...data };
-        }
-        // Xử lý kết quả multi status
-        for (const orderId in allData) {
-          if (allData.hasOwnProperty(orderId)) {
-            const statusObj = allData[orderId];
-            const order = orders.find(o => o.orderId.toString() === orderId);
-            if (order) {
-              // Lấy smmConfig từ cache
-              const smmConfig = smmConfigCache[order.DomainSmm] || null;
-              let phihoan = 1000;
-              if (smmConfig && typeof smmConfig.phihoan === 'number') phihoan = smmConfig.phihoan;
-              const mappedStatus = mapStatus(statusObj.status);
-              // console.log(`API trả về cho đơn ${orderId}:`, statusObj);
-              if (mappedStatus !== null) order.status = mappedStatus;
-              if (statusObj.start_count !== undefined) order.start = statusObj.start_count;
-              if (
-                ['Pending', 'In progress', 'Processing'].includes(mappedStatus) &&
-                Number(statusObj.remains) === 0
-              ) {
-                order.dachay = 0;
-              } else if (statusObj.remains !== undefined) {
-                order.dachay = order.quantity - Number(statusObj.remains);
-              }
-              // Nếu trạng thái là Canceled hoặc Partial thì hoàn tiền phần còn lại
-              const user = await User.findOne({ username: order.username });
-              const tiencu = user.balance || 0;
-              if (mappedStatus === 'Partial') {
-                if (user) {
-                  const soTienHoan = ((statusObj.remains || 0) * order.rate) - phihoan;
-                  if ((soTienHoan) < 50) {
-                    order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
-                    await order.save();
-                    // console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
-                    continue;
-                  }
-                  let trangthai = false;
-                  if (smmConfig && smmConfig.autohoan === 'on') {
-                    user.balance = (user.balance || 0) + soTienHoan;
-                    await user.save();
-                    trangthai = true;
-                  }
-                  const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
+                const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
+                if (smmConfig && smmConfig.autohoan === 'on') {
+                  // Lưu vào Refund với status true
+                  await Refund.create({
+                    username: order.username,
+                    madon: order.Madon,
+                    link: order.link,
+                    server: order.namesv,
+                    soluongmua: order.quantity,
+                    giatien: order.rate,
+                    chuachay: statusObj.remains || 0,
+                    tonghoan: soTienHoan,
+                    noidung: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${statusObj.remains} cho uid ${order.link} và ${phihoan} phí dịch vụ`,
+                    status: true
+                  });
+                  user.balance = (user.balance || 0) + soTienHoan;
+                  await user.save();
+                  // Lưu historyData
                   const historyData = new HistoryUser({
                     username: order.username,
                     madon: order.Madon,
@@ -301,13 +155,11 @@ async function checkOrderStatus() {
                     link: order.link,
                     tienhientai: tiencu,
                     tongtien: soTienHoan,
-                    tienconlai: trangthai ? user.balance : tiencu,
+                    tienconlai: user.balance,
                     createdAt: new Date(),
-                    mota: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${statusObj.remains} cho uid ${order.link} và ${phihoan} phí dịch vụ${trangthai ? '' : ' (chờ duyệt)'}`,
-                    trangthai: trangthai,
+                    mota: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${statusObj.remains} cho uid ${order.link} và ${phihoan} phí dịch vụ`,
                   });
                   await historyData.save();
-                  // console.log(`Đã ${trangthai ? 'hoàn tiền' : 'lưu chờ duyệt'} cho user ${user.username} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
                   const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
                   // Gửi thông báo Telegram nếu có cấu hình
                   const teleConfig = await Telegram.findOne();
@@ -315,6 +167,122 @@ async function checkOrderStatus() {
                     const telegramMessage =
                       `📌 *THÔNG BÁO HOÀN TIỀN!*\n` +
                       `👤 *Khách hàng:* ${order.username}\n` +
+                      ` Mã đơn: ${order.Madon}\n` +
+                      `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
+                      `🔹 *Tương ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
+                      `🔸 *Dịch vụ:* ${order.namesv}\n` +
+                      `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}\n`;
+                    try {
+                      await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                        chat_id: teleConfig.chatId,
+                        text: telegramMessage,
+                        parse_mode: "Markdown",
+                      });
+                      console.log("Thông báo Telegram đã được gửi.");
+                    } catch (telegramError) {
+                      console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
+                    }
+                  }
+                } else {
+                  // Lưu vào Refund với status false
+                  await Refund.create({
+                    username: order.username,
+                    madon: order.Madon,
+                    link: order.link,
+                    server: order.namesv || '',
+                    soluongmua: order.quantity,
+                    giatien: order.rate,
+                    chuachay: statusObj.remains || 0,
+                    tonghoan: soTienHoan,
+                    noidung: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${statusObj.remains} cho uid ${order.link} và ${phihoan} phí dịch vụ`,
+                    status: false
+                  });
+                  const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
+                  // Gửi thông báo Telegram nếu có cấu hình
+                  const teleConfig = await Telegram.findOne();
+                  if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+                    const telegramMessage =
+                      `📌 *THÔNG BÁO HOÀN TIỀN CHƯA DUYỆT!*\n` +
+                      `👤 *Khách hàng:* ${order.username}\n` +
+                      ` Mã đơn: ${order.Madon}\n` +
+                      `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
+                      `🔹 *Tương ứng số lượng:* ${statusObj.remains} - Rate : ${order.rate}\n` +
+                      `🔸 *Dịch vụ:* ${order.namesv}\n` +
+                      `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}\n`;
+                    try {
+                      await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
+                        chat_id: teleConfig.chatId,
+                        text: telegramMessage,
+                        parse_mode: "Markdown",
+                      });
+                      console.log("Thông báo Telegram đã được gửi.");
+                    } catch (telegramError) {
+                      console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
+                    }
+                  }
+                }
+                order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
+              }
+            }
+            if (mappedStatus === 'Canceled') {
+              if (user) {
+                const soTienHoan = ((order.quantity || 0) * order.rate) - phihoan;
+                if ((soTienHoan) < 50) {
+                  order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
+                  await order.save();
+                  // console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
+                  continue;
+                }
+                const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
+                if (smmConfig && smmConfig.autohoan === 'on') {
+                  await Refund.create({
+                    username: order.username,
+                    madon: order.Madon,
+                    link: order.link,
+                    server: order.namesv || '',
+                    soluongmua: order.quantity,
+                    giatien: order.rate,
+                    chuachay: order.quantity || 0,
+                    tonghoan: soTienHoan,
+                    noidung: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và ${phihoan} phí dịch vụ`,
+                    status: true
+                  });
+                  user.balance = (user.balance || 0) + soTienHoan;
+                  await user.save();
+                  const historyData = new HistoryUser({
+                    username: order.username,
+                    madon: order.Madon,
+                    hanhdong: "Hoàn tiền",
+                    link: order.link,
+                    tienhientai: tiencu,
+                    tongtien: soTienHoan,
+                    tienconlai: user.balance,
+                    createdAt: new Date(),
+                    mota: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và ${phihoan} phí dịch vụ`,
+                  });
+                  await historyData.save();
+                  const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
+                  // Gửi thông báo Telegram nếu có cấu hình
+                  const teleConfig = await Telegram.findOne();
+                  if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+                    const telegramMessage =
+                      `📌 *THÔNG BÁO HOÀN TIỀN!*\n` +
+                      `👤 *Khách hàng:* ${order.username}\n` +
+                      ` Mã đơn: ${order.Madon}\n` +
                       `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
                       `🔹 *Tương ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
                       `🔸 *Dịch vụ:* ${order.namesv}\n` +
@@ -337,47 +305,28 @@ async function checkOrderStatus() {
                       console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
                     }
                   }
-                  order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
-                }
-              }
-              if (mappedStatus === 'Canceled') {
-                if (user) {
-                  const soTienHoan = ((order.quantity || 0) * order.rate) - phihoan;
-                  if ((soTienHoan) < 50) {
-                    order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
-                    await order.save();
-                    // console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
-                    continue;
-                  }
-                  let trangthai = false;
-                  if (smmConfig && smmConfig.autohoan === 'on') {
-                    user.balance = (user.balance || 0) + soTienHoan;
-                    await user.save();
-                    trangthai = true;
-                  }
-
-                  const soTienHoanFormatted = Number(Math.round(soTienHoan)).toLocaleString("en-US");
-                  const historyData = new HistoryUser({
+                } else {
+                  // Lưu vào Refund với status false
+                  await Refund.create({
                     username: order.username,
                     madon: order.Madon,
-                    hanhdong: "Hoàn tiền",
                     link: order.link,
-                    tienhientai: tiencu,
-                    tongtien: soTienHoan,
-                    tienconlai: trangthai ? user.balance : tiencu,
-                    createdAt: new Date(),
-                    mota: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và ${phihoan} phí dịch vụ${trangthai ? '' : ' (chờ duyệt)'}`,
-                    trangthai: trangthai,
+                    server: order.namesv || '',
+                    soluongmua: order.quantity,
+                    giatien: order.rate,
+                    chuachay: order.quantity || 0,
+                    tonghoan: soTienHoan,
+                    noidung: `Hệ thống hoàn cho bạn ${soTienHoanFormatted} dịch vụ tương đương với ${order.quantity} cho uid ${order.link} và ${phihoan} phí dịch vụ`,
+                    status: false
                   });
-                  await historyData.save();
-                  // console.log(`Đã ${trangthai ? 'hoàn tiền' : 'lưu chờ duyệt'} cho user ${user._id} số tiền ${soTienHoan} do đơn ${order.Madon} bị hủy hoặc chạy thiếu.`);
                   const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
                   // Gửi thông báo Telegram nếu có cấu hình
                   const teleConfig = await Telegram.findOne();
                   if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
                     const telegramMessage =
-                      `📌 *THÔNG BÁO HOÀN TIỀN!*\n` +
+                      `📌 *THÔNG BÁO HOÀN TIỀN CHƯA DUYỆT!*\n` +
                       `👤 *Khách hàng:* ${order.username}\n` +
+                      ` Mã đơn: ${order.Madon}\n` +
                       `💰 *Số tiền hoàn:* ${soTienHoanFormatted}\n` +
                       `🔹 *Tương ứng số lượng:* ${order.quantity} - Rate : ${order.rate}\n` +
                       `🔸 *Dịch vụ:* ${order.namesv}\n` +
@@ -400,17 +349,18 @@ async function checkOrderStatus() {
                       console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
                     }
                   }
-                  order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
                 }
+                order.iscancel = false; // Đánh dấu đơn hàng đã được hoàn tiền
               }
-              await order.save();
-              // console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
-            } else {
-              console.warn(`Không tìm thấy đơn nào tương ứng với orderId ${orderId}`);
             }
+            await order.save();
+            // console.log(`Đã cập nhật đơn ${order.Madon}: status = ${order.status}, dachay = ${order.dachay}`);
+          } else {
+            console.warn(`Không tìm thấy đơn nào tương ứng với orderId ${orderId}`);
           }
         }
       }
+      //}
     }
   } catch (error) {
     console.error("Lỗi khi kiểm tra trạng thái đơn hàng:", error.message);
