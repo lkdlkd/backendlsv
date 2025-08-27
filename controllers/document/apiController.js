@@ -209,11 +209,13 @@ exports.AddOrder = async (req, res) => {
         if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
             // Giờ Việt Nam (UTC+7)
             const createdAtVN = new Date(createdAt.getTime() + 7 * 60 * 60 * 1000);
-            const telegramMessage = `📌 *Đơn hàng mới đã được tạo!*\n` +
+            const telegramMessage =
+                `📌 *Đơn hàng mới đã được tạo thông qua API*!*\n` +
                 `👤 *Khách hàng:* ${username}\n` +
                 `🆔 *Mã đơn:* ${newMadon}\n` +
                 `🔹 *Dịch vụ:* ${serviceFromDb.name}\n` +
                 `🔗 *Link:* ${link}\n` +
+                `🔸 *Rate:* ${serviceFromDb.rate}\n` +
                 `📌 *Số lượng:* ${qty}\n` +
                 `💰 *Tiền cũ:* ${(user.balance + totalCost).toLocaleString()} VNĐ\n` +
                 `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
@@ -226,7 +228,8 @@ exports.AddOrder = async (req, res) => {
                     minute: "2-digit",
                     second: "2-digit",
                 })}\n` +
-                `📝 *Ghi chú:* ${'Không có'}`;
+                `📝 *Ghi chú:* ${'Không có'}\n` +
+                `Nguồn: ${serviceFromDb.DomainSmm}`;
             await sendTelegramNotification({
                 telegramBotToken: teleConfig.botToken,
                 telegramChatId: teleConfig.chatId,
@@ -363,19 +366,19 @@ exports.cancelOrder = async (req, res) => {
 
         // Tìm đơn hàng theo order
         const orders = await Order.findOne({ Madon: order });
-        if (!orders) return res.status(404).json({ order : order , cancel : { error: 'Không tìm thấy đơn hàng' } });
-        if (orders.iscancel) return res.status(400).json({ order : order , cancel : { error: 'Đơn hàng đã được hủy' } });
-        if(orders.status === "Completed") return res.status(400).json({ order : orders.Madon , cancel : { error: 'Đơn hàng đã hoàn thành không thể hủy' } });
-        if(orders.status === "Partial" || orders.status === "Canceled") return res.status(400).json({ order : orders.Madon , cancel : { error: 'Đơn hàng đã được hủy' } });    
-        if (orders.cancel !== "on") return res.status(400).json({ order : orders.Madon , cancel : { error: 'Đơn hàng không hỗ trợ hủy' } });
+        if (!orders) return res.status(404).json({ order: order, cancel: { error: 'Không tìm thấy đơn hàng' } });
+        if (orders.iscancel) return res.status(400).json({ order: order, cancel: { error: 'Đơn hàng đã được hủy' } });
+        if (orders.status === "Completed") return res.status(400).json({ order: orders.Madon, cancel: { error: 'Đơn hàng đã hoàn thành không thể hủy' } });
+        if (orders.status === "Partial" || orders.status === "Canceled") return res.status(400).json({ order: orders.Madon, cancel: { error: 'Đơn hàng đã được hủy' } });
+        if (orders.cancel !== "on") return res.status(400).json({ order: orders.Madon, cancel: { error: 'Đơn hàng không hỗ trợ hủy' } });
         // Kiểm tra quyền hủy đơn
         if (user.role !== 'admin' && orders.username !== user.username) {
-            return res.status(403).json({ order : orders.Madon , cancel : { error: 'Đơn hàng không thể hủy' } });
+            return res.status(403).json({ order: orders.Madon, cancel: { error: 'Đơn hàng không thể hủy' } });
         }
 
         // Lấy config SmmSv theo domain
         const smmConfig = await SmmSv.findOne({ name: orders.DomainSmm });
-        if (!smmConfig) return res.status(400).json({ order : orders.Madon , cancel : { error: 'Đơn hàng không thể hủy' } });
+        if (!smmConfig) return res.status(400).json({ order: orders.Madon, cancel: { error: 'Đơn hàng không thể hủy' } });
         // Tạo instance SmmApiService
         const smmApi = new SmmApiService(smmConfig.url_api, smmConfig.api_token);
 
@@ -401,7 +404,7 @@ exports.cancelOrder = async (req, res) => {
                 cancelError2 = 'đơn hàng không thể hủy';
             }
             if (cancelError2) {
-                return res.status(404).json({ order : orders.Madon , cancel : { error: 'đơn hàng không thể hủy' } });
+                return res.status(404).json({ order: orders.Madon, cancel: { error: 'đơn hàng không thể hủy' } });
             } else {
                 // cancel2 thành công
                 const historyData = new HistoryUser({
@@ -418,7 +421,7 @@ exports.cancelOrder = async (req, res) => {
                 await historyData.save();
                 orders.iscancel = true;
                 await orders.save();
-                return res.json({ order : orders.Madon , canecel : 1 });
+                return res.json({ order: orders.Madon, canecel: 1 });
             }
         } else {
             // cancel thành công
@@ -436,7 +439,7 @@ exports.cancelOrder = async (req, res) => {
             await historyData.save();
             orders.iscancel = true;
             await orders.save();
-            return res.json({ order : orders.Madon , canecel : 1 });
+            return res.json({ order: orders.Madon, canecel: 1 });
         }
     } catch (err) {
         res.status(500).json({ error: 'Lỗi liên hệ admin!' });

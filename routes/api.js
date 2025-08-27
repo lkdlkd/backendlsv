@@ -7,6 +7,7 @@ const smm = require('@/controllers/Smm/smmController')
 const toolController = require("@/controllers/tool/getuid");
 const { getStatistics } = require('@/controllers/website/thongkeController');
 const { addOrder, deleteOrder, getOrders } = require('@/controllers/order/orderController');
+const { updateOrderStatus } = require('@/controllers/order/orderController');
 const card = require('@/controllers/thecao/CardController');
 const server = require('@/controllers/server/ServerController');
 const apiv2 = require('@/controllers/document/apiController'); // Đường dẫn đúng đến apiController
@@ -58,6 +59,7 @@ router.put('/server/update/:id', authenticate.authenticateAdmin, server.updateSe
 // order
 router.post('/order/add', authenticate.authenticateUser, addOrder); // ok Thêm đơn hàng mới
 router.get('/order', authenticate.authenticateUser, getOrders); // ok Lấy danh sách đơn hàng của người dùng
+router.put('/order/update/:Madon', authenticate.authenticateAdmin, updateOrderStatus); // Cập nhật trạng thái đơn hàng
 // router admin
 router.put('/user/update/:id', authenticate.authenticateAdmin, user.updateUser); // ok Cập nhật thông tin người dùng
 router.post('/user/addbalance/:id', authenticate.authenticateAdmin, user.addBalance); //ok Thêm tiền vào tài khoản người dùng

@@ -222,6 +222,7 @@ async function addOrder(req, res) {
         `🆔 *Mã đơn:* ${newMadon}\n` +
         `🔹 *Dịch vụ:* ${serviceFromDb.maychu} ${serviceFromDb.name}\n` +
         `🔗 *Link:* ${link}\n` +
+        `🔸 *Rate:* ${serviceFromDb.rate}\n` +
         `📌 *Số lượng:* ${qty}\n` +
         `💰 *Tiền cũ:* ${(user.balance + totalCost).toLocaleString()} VNĐ\n` +
         `💰 *Tổng tiền:* ${totalCost.toLocaleString()} VNĐ\n` +
@@ -234,7 +235,8 @@ async function addOrder(req, res) {
           minute: "2-digit",
           second: "2-digit",
         })}\n` +
-        `📝 *Ghi chú:* ${note || 'Không có'}`;
+        `📝 *Ghi chú:* ${note || 'Không có'}\n` +
+        `Nguồn: ${serviceFromDb.DomainSmm}`;
       await sendTelegramNotification({
         telegramBotToken: teleConfig.botToken,
         telegramChatId: teleConfig.chatId,
@@ -248,10 +250,34 @@ async function addOrder(req, res) {
     res.status(500).json({ message: error.message });
   }
 }
+// Hàm cập nhật trạng thái đơn hàng (chỉ admin)
+async function updateOrderStatus(req, res) {
+  try {
+    const user = req.user;
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Chỉ admin mới có quyền cập nhật đơn hàng' });
+    }
+    const { Madon } = req.params;
+    const { start, dachay, status, iscancel } = req.body;
+    const order = await Order.findOne({ Madon });
+    if (!order) {
+      return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+    }
+    if (start !== undefined) order.start = start;
+    if (dachay !== undefined) order.dachay = dachay;
+    if (status !== undefined) order.status = status;
+    if (iscancel !== undefined) order.iscancel = iscancel;
+    await order.save();
+    return res.status(200).json({ success: true, order });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+}
 
 
 module.exports = {
   addOrder,
   deleteOrder,
   getOrders,
+  updateOrderStatus,
 };
