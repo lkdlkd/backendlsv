@@ -52,6 +52,14 @@ async function updateServicePrices() {
               await serviceItem.save();
               return;
             }
+               // ✅ Cập nhật min và max nếu có trong 
+            if (apiService.min && apiService.max) {
+  if (serviceItem.min !== apiService.min || serviceItem.max !== apiService.max) {
+    serviceItem.min = apiService.min;
+    serviceItem.max = apiService.max;
+    
+  }
+}
             const apiRate = apiService.rate * smmSvConfig.tigia;
             const dbRate = serviceItem.rate;
             // console.log(`Kiểm tra dịch vụ: ${serviceItem.name} - Giá API: ${apiRate}, Giá CSDL: ${dbRate}`);
