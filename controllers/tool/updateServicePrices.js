@@ -57,7 +57,7 @@ async function updateServicePrices() {
   if (serviceItem.min !== apiService.min || serviceItem.max !== apiService.max) {
     serviceItem.min = apiService.min;
     serviceItem.max = apiService.max;
-    
+    await serviceItem.save();
   }
 }
             const apiRate = apiService.rate * smmSvConfig.tigia;
