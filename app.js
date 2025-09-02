@@ -26,11 +26,10 @@ const corsOptions = {
 
 // Middleware CORS tùy chỉnh
 app.use((req, res, next) => {
-    if (req.path.startsWith("/api/v2")) {
+    if (req.originalUrl.startsWith("/api/v2")) {
         // Không áp dụng CORS cho /api/v2
         next();
     } else {
-        // Áp dụng CORS cho các API khác
         cors(corsOptions)(req, res, next);
     }
 });
