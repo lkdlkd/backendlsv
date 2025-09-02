@@ -475,7 +475,7 @@ exports.getme = async (req, res) => {
         }
         // Định dạng các trường cần hiển thị (có thể điều chỉnh theo yêu cầu)
         const userForm = {
-            balance: user.balance / 25000,
+            balance: (user.balance / 25000).toString(), 
             currency: "USD",
             // Các trường khác nếu cần
         };
