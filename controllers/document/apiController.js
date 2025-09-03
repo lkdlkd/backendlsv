@@ -314,7 +314,7 @@ exports.getOrderStatus = async (req, res) => {
                         start_count: order.start,
                         status: order.status,
                         remains: order.quantity - order.dachay,
-                        note: order.note || "",
+                        currency: "USD",
                     };
                 }
                 else {
@@ -335,7 +335,7 @@ exports.getOrderStatus = async (req, res) => {
                     start_count: firstOrder.start,
                     status: firstOrder.status,
                     remains: firstOrder.quantity - firstOrder.dachay,
-                    note: firstOrder.note || "",
+                    currency: "USD",
                 };
             } else {
                 formattedOrder = { order: firstOrder.Madon, error: "Incorrect order ID" };
