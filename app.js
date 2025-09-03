@@ -14,6 +14,10 @@ const api = require('@/routes/api'); // Đường dẫn đúng đến file api.j
 const app = express();
 const noti = require('@/routes/website/notificationsRouter');
 app.use(express.json());
+const multer = require('multer');
+const upload = multer();
+app.use(upload.any());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 const path = require('path');
 global.__basedir = path.resolve(__dirname);
@@ -26,7 +30,7 @@ const corsOptions = {
 
 // Middleware CORS tùy chỉnh
 app.use((req, res, next) => {
-    if (req.originalUrl.startsWith("/api/v2")) {
+    if (req.path.startsWith("/api/v2")) {
         // Không áp dụng CORS cho /api/v2
         next();
     } else {
