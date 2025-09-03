@@ -90,7 +90,7 @@ exports.rechargeCardStatus = async () => {
                         const percent_card = Number(cardInfo.fees) || 0;
                         const chietkhau = card.amount - (card.amount * percent_card) / 100;
 
-                        const note = `Bạn đã nạp thành công ${chietkhau.toLocaleString("vi-VN")} VNĐ từ thẻ cào. Số dư tài khoản của bạn là ${(userData.balance + chietkhau).toLocaleString("vi-VN")} VNĐ`;
+                        const note = `Hệ thống nạp thẻ nạp tiền tự động cho bạn số tiền ${chietkhau.toLocaleString("vi-VN")} của thẻ cào số seri ${card.serial}`;
 
                         // Tạo giao dịch mới (HistoryUser)
                         await Transaction.create({
@@ -120,6 +120,7 @@ exports.rechargeCardStatus = async () => {
                                 `📌 *NẠP TIỀN THẺ CÀO!*\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
                                 `👤 *Cộng tiền:* nạp thẻ thành công số tiền ${chietkhau}.\n` +
+                                `🔹 *Số dư mới:* ${Number(Math.floor(Number(userData.balance))).toLocaleString("en-US")} VNĐ\n` +
                                 `🔹 *Tạo lúc:* ${taoluc.toLocaleString("vi-VN", {
                                     day: "2-digit",
                                     month: "2-digit",

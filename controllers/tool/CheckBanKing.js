@@ -174,7 +174,7 @@ cron.schedule('*/30 * * * * *', async () => {
                                     `💰 *Số tiền nạp:* ${amount.toLocaleString()}\n` +
                                     `🎁 *Khuyến mãi:* ${bonus}\n` +
                                     `🔹 *Tổng cộng:* ${totalAmount.toLocaleString()}\n` +
-                                    `🔹 *Số dư:* ${user.balance.toLocaleString()} VNĐ\n` +
+                                    `🔹 *Số dư:* ${Number(Math.floor(Number(user.balance))).toLocaleString("en-US")} VNĐ\n` +
                                     `⏰ *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                                         day: "2-digit",
                                         month: "2-digit",
