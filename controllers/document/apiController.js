@@ -46,7 +46,7 @@ exports.getServices = async (req, res) => {
             name: `${service.maychu} ${service.name}`, // Đảm bảo có khoảng trắng
             type: service.comment === "on" ? "Custom Comments" : "Default",
             platform: service.type.name || "không xác định",
-            category: service.category.name || "Không xác định", // Kiểm tra nếu category tồn tại
+            category: `${service.type.name} | ${service.category.name || "Không xác định"}`, // Kiểm tra nếu category tồn tại
             rate: service.rate / 25,
             min: service.min,
             max: service.max,
