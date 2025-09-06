@@ -37,7 +37,7 @@ exports.getServices = async (req, res) => {
             return res.status(403).json({ success: false, error: "Người dùng không hoạt động" });
         }
         // Lấy danh sách dịch vụ từ CSDL
-        const services = await Service.find()
+        const services = await Service.find({ isActive: true })
             .populate("category", "name")
             .populate("type", "name"); // Lấy thông tin của Platform
         // Định dạng các trường cần hiển thị
