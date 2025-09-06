@@ -72,8 +72,8 @@ exports.getServer = async (req, res) => {
         .populate("category", "name path") // Lấy thông tin tên của Category
         .populate("type", "name logo") // Lấy thông tin của Platform
         .skip(skip)
-        .limit(limit)
-        .sort({ thutu: 1 }); // Sắp xếp theo thutu tăng dần
+        .limit(limit);
+        // .sort({ thutu: -1}); // Sắp xếp theo thutu giảm dần, sau đó đến thời gian thêm
 
       const formattedServices = services.map(service => ({
         _id: service._id,
@@ -120,8 +120,7 @@ exports.getServer = async (req, res) => {
     } else {
       // User thường: chỉ lấy các trường cần thiết
       const services = await Service.find(filter)
-        .populate("category", "name path").populate("type", "name logo")
-        .sort({ thutu: 1 }); // Sắp xếp theo thutu tăng dần
+        .populate("category", "name path").populate("type", "name logo");
 
       const formattedServices = services.map(service => ({
         description: service.description,
@@ -223,7 +222,7 @@ exports.getServerByTypeAndPath = async (req, res) => {
           "category.path": { $regex: path, $options: "i" }
         }
       },
-      { $sort: { thutu: 1 } } // Sắp xếp theo thutu tăng dần
+      { $sort: { thutu: 1} } // Sắp xếp theo thutu giảm dần, sau đó đến thời gian thêm
     ]);
 
     // Lấy thông tin note và modal_show duy nhất từ category
