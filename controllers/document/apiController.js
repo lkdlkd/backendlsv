@@ -152,9 +152,17 @@ exports.AddOrder = async (req, res) => {
 
         const purchaseResponse = await smm.order(purchasePayload);
         if (!purchaseResponse || !purchaseResponse.order) {
-            throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại sau');
+            if (purchaseResponse && purchaseResponse.error) {
+                const err = purchaseResponse.error.toLowerCase();
+                if (err.includes('số dư') || err.includes('tiền')) {
+                    throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
+                } else {
+                    throw new Error(purchaseResponse.error);
+                }
+            } else {
+                throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
+            }
         }
-
         // --- Bước 5: Trừ số tiền vào tài khoản người dùng ---
         const newBalance = user.balance - totalCost;
         user.balance = newBalance;
