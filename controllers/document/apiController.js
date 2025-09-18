@@ -215,7 +215,7 @@ exports.AddOrder = async (req, res) => {
                 `📌 *Đơn hàng mới đã được tạo thông qua API*!*\n` +
                 `👤 *Khách hàng:* ${username}\n` +
                 `🆔 *Mã đơn:* ${newMadon}\n` +
-                `🔹 *Dịch vụ:* ${serviceFromDb.name}\n` +
+                `🔹 *Dịch vụ:* ${serviceFromDb.maychu} ${serviceFromDb.name}\n` +
                 `🔗 *Link:* ${link}\n` +
                 `🔸 *Rate:* ${serviceFromDb.rate}\n` +
                 `📌 *Số lượng:* ${qty}\n` +

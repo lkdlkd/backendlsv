@@ -89,7 +89,7 @@ async function checkOrderStatus() {
       for (const orderId in allData) {
         if (allData.hasOwnProperty(orderId)) {
           const statusObj = allData[orderId];
-          console.log(`Kết quả từ API cho orderId ${orderId}:`, statusObj);
+          // console.log(`Kết quả từ API cho orderId ${orderId}:`, statusObj);
           const order = orders.find(o => o.orderId.toString() === orderId);
           if (order) {
             // Lấy smmConfig từ cache
