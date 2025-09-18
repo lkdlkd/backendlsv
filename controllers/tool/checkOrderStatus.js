@@ -41,24 +41,13 @@ async function checkOrderStatus() {
     }
     // console.log(`Đang kiểm tra trạng thái của ${runningOrders.length} đơn hàng...`);
 
-    // Cache cho Service và SmmSv để tránh truy vấn lặp lại
-    const serviceCache = {};
+    // Cache cho SmmSv để tránh truy vấn lặp lại
     const smmConfigCache = {};
     const groups = {};
 
     for (const order of runningOrders) {
-      // Cache Service
-      let service = serviceCache[order.SvID];
-      if (!service) {
-        service = await Service.findOne({ serviceId: order.SvID });
-        if (service) {
-          serviceCache[order.SvID] = service;
-        } else {
-          console.warn(`Không tìm thấy Service cho đơn ${order.Madon} (SvID: ${order.SvID}, namesv: ${order.namesv})`);
-        }
-      }
-      // Lấy DomainSmm: ưu tiên từ Service, nếu không có thì lấy từ Order
-      const domainSmm = service && service.DomainSmm ? service.DomainSmm : order.DomainSmm;
+      // Lấy domainSmm trực tiếp từ order
+      const domainSmm = order.DomainSmm;
       if (!domainSmm) {
         console.warn(`Không tìm thấy DomainSmm cho đơn ${order.Madon} (SvID: ${order.SvID}, namesv: ${order.namesv})`);
         continue;
@@ -89,7 +78,7 @@ async function checkOrderStatus() {
     for (const groupKey in groups) {
       const { smmService, orders } = groups[groupKey];
       const orderIds = orders.map(order => order.orderId);
-      const orderIdChunks = chunkArray(orderIds, 100);
+      const orderIdChunks = chunkArray(orderIds, 50);
       let allData = {};
 
       for (const chunk of orderIdChunks) {
@@ -100,6 +89,7 @@ async function checkOrderStatus() {
       for (const orderId in allData) {
         if (allData.hasOwnProperty(orderId)) {
           const statusObj = allData[orderId];
+          console.log(`Kết quả từ API cho orderId ${orderId}:`, statusObj);
           const order = orders.find(o => o.orderId.toString() === orderId);
           if (order) {
             // Lấy smmConfig từ cache

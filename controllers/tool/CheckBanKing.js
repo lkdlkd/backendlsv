@@ -9,19 +9,21 @@ const Telegram = require('../../models/Telegram');
 
 // Hàm tạo URL API tương ứng với loại ngân hàng
 function getBankApiUrl(bank) {
-    const { bank_name, bank_password, account_number, token } = bank;
+    const { bank_name, bank_password, account_number, token, url_api } = bank;
+
+    if (!url_api) return null;
 
     switch (bank_name.toLowerCase()) {
         case 'acb':
-            return `https://api.web2m.com/historyapiacbv3/${bank_password}/${account_number}/${token}`;
+            return `${url_api}/historyapiacbv3/${bank_password}/${account_number}/${token}`;
         case 'vietcombank':
-            return `https://api.web2m.com/historyapivcbv3/${bank_password}/${account_number}/${token}`;
+            return `${url_api}/historyapivcbv3/${bank_password}/${account_number}/${token}`;
         case 'techcombank':
-            return `https://api.web2m.com/historyapitcbv3/${bank_password}/${account_number}/${token}`;
+            return `${url_api}/historyapitcbv3/${bank_password}/${account_number}/${token}`;
         case 'mbbank':
-            return `https://api.web2m.com/historyapimbv3/${bank_password}/${account_number}/${token}`;
+            return `${url_api}/historyapimbv3/${bank_password}/${account_number}/${token}`;
         case 'bidv':
-            return `https://api.web2m.com/historyapibidvv3/${bank_password}/${account_number}/${token}`;
+            return `${url_api}/historyapibidvv3/${bank_password}/${account_number}/${token}`;
         default:
             return null;
     }

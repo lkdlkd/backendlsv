@@ -56,7 +56,7 @@ exports.getBank = async (req, res) => {
             banks = await Bank.find();
         } else {
             // User thường: ẩn các trường nhạy cảm
-            banks = await Bank.find().select("-bank_account -bank_password -token");
+            banks = await Bank.find().select("-bank_account -bank_password -token -url_api");
         }
         if (!banks || banks.length === 0) {
             return res.status(404).json({ message: 'Bank not found' });

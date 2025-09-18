@@ -31,8 +31,8 @@ async function fetchAndSaveCardStatus() {
                 {
                     telco: item.telco,
                     value: item.value,
-                    fees: item.fees + 5, // Cộng thêm 5 vào fees
-                    penalty: item.penalty,
+                    fees: (Number(item.fees) || 30) + 5, // Cộng thêm 5 vào fees
+                    penalty: Number(item.penalty),
                 },
                 { upsert: true, new: true }
             );
