@@ -151,11 +151,13 @@ exports.getStatistics = async (req, res) => {
         // Chỉ trả về name của DomainSmm cho mỗi item
         const SmmSv = require("../../models/SmmSv");
         for (const item of revenueAgg) {
-            if (item._id) {
+            if (item._id && typeof item._id === 'object' && item._id.toHexString) {
+                // ObjectId hợp lệ
                 const smm = await SmmSv.findById(item._id);
-                item.DomainSmm = smm ? smm.name : null;
+                item.DomainSmm = smm ? smm.name : 'doitac';
             } else {
-                item.DomainSmm = null;
+                // Nếu _id là string (ví dụ 'smm1s') hoặc null thì gán luôn
+                item.DomainSmm = 'doitac';
             }
         }
 

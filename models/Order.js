@@ -20,7 +20,7 @@ const orderSchema = new mongoose.Schema({
   ObjectLink: { type: String, default: '' }, // link object
   lai: { type: Number, default: 0 }, // lợi nhuận từ đơn hàng
   tientieu: { type: Number, default: 0 }, // tiền tiêu từ đơn hàng
-  DomainSmm: { type: mongoose.Schema.Types.ObjectId, ref: "SmmSv", required: true },
+  DomainSmm: { type: mongoose.Schema.Types.ObjectId, ref: "SmmSv", default: null },
   refil: { type: String, enum: ["on", "off"], default: "off" }, // chức năng refil
   cancel: { type: String, enum: ["on", "off"], default: "off" }, // chức năng hủy đơn
   iscancel: { type: Boolean, default: false }, // trạng thái hủy đơn
