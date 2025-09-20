@@ -11,18 +11,19 @@ async function updateServicePrices() {
     const services = await Service.find({});
     console.log(`Đang kiểm tra ${services.length} dịch vụ...`);
 
-    // Gom nhóm các service theo DomainSmm
+    // Gom nhóm các service theo DomainSmm (ObjectId)
     const smmGroups = {};
     for (const service of services) {
-      if (!smmGroups[service.DomainSmm]) smmGroups[service.DomainSmm] = [];
-      smmGroups[service.DomainSmm].push(service);
+      const domainId = String(service.DomainSmm);
+      if (!smmGroups[domainId]) smmGroups[domainId] = [];
+      smmGroups[domainId].push(service);
     }
 
     // Duyệt qua từng nhóm DomainSmm, chỉ gọi API 1 lần cho mỗi nhóm
-    for (const domain in smmGroups) {
-      const smmSvConfig = await SmmSv.findOne({ name: domain });
+    for (const domainId in smmGroups) {
+      const smmSvConfig = await SmmSv.findById(domainId);
       if (!smmSvConfig || !smmSvConfig.url_api || !smmSvConfig.api_token) {
-        console.warn(`Cấu hình API chưa được thiết lập cho domain ${domain}`);
+        console.warn(`Cấu hình API chưa được thiết lập cho domainId ${domainId}`);
         continue;
       }
       let apiResponse;
@@ -32,16 +33,16 @@ async function updateServicePrices() {
           action: 'services',
         });
       } catch (err) {
-        console.warn(`Lỗi gọi API cho domain ${domain}:`, err.message);
+        console.warn(`Lỗi gọi API cho domainId ${domainId}:`, err.message);
         continue;
       }
       if (!apiResponse.data || !Array.isArray(apiResponse.data)) {
-        console.warn(`Dữ liệu API không hợp lệ cho domain ${domain}`);
+        console.warn(`Dữ liệu API không hợp lệ cho domainId ${domainId}`);
         continue;
       }
       // Duyệt qua từng service thuộc domain này
       await Promise.all(
-        smmGroups[domain].map(async (serviceItem) => {
+        smmGroups[domainId].map(async (serviceItem) => {
           try {
             const apiService = apiResponse.data.find(
               (s) => Number(s.service) === Number(serviceItem.serviceId)
@@ -52,19 +53,19 @@ async function updateServicePrices() {
               await serviceItem.save();
               return;
             }
-               // ✅ Cập nhật min và max nếu có trong 
+            // ✅ Cập nhật min và max nếu có trong 
             if (apiService.min && apiService.max) {
-  if (serviceItem.min !== apiService.min || serviceItem.max !== apiService.max) {
-    serviceItem.min = apiService.min;
-    serviceItem.max = apiService.max;
-    await serviceItem.save();
-  }
-}
+              if (serviceItem.min !== apiService.min || serviceItem.max !== apiService.max) {
+                serviceItem.min = apiService.min;
+                serviceItem.max = apiService.max;
+                await serviceItem.save();
+              }
+            }
             const apiRate = apiService.rate * smmSvConfig.tigia;
             const dbRate = serviceItem.rate;
             // console.log(`Kiểm tra dịch vụ: ${serviceItem.name} - Giá API: ${apiRate}, Giá CSDL: ${dbRate}`);
             // So sánh và cập nhật giá
-            if ( 
+            if (
               typeof serviceItem.originalRate === 'number' &&
               dbRate < apiRate &&
               smmSvConfig.update_price === "on"

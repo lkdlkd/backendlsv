@@ -137,7 +137,7 @@ exports.getStatistics = async (req, res) => {
         });
 
         // Tổng doanh thu (lợi nhuận) theo từng DomainSmm và tổng tiền hoàn theo trạng thái đơn tại thời điểm hoàn tiền
-        const revenueAgg = await Order.aggregate([
+        let revenueAgg = await Order.aggregate([
             {
                 $match: {
                     status: { $in: ["running", "In progress", "Processing", "Pending", "Completed", "Partial" , "Canceled"] },
@@ -148,6 +148,16 @@ exports.getStatistics = async (req, res) => {
                 $group: { _id: "$DomainSmm", totalLai: { $sum: "$lai" }, totalTientieu: { $sum: "$tientieu" }, totalCost: { $sum: "$totalCost" } }
             }
         ]);
+        // Chỉ trả về name của DomainSmm cho mỗi item
+        const SmmSv = require("../../models/SmmSv");
+        for (const item of revenueAgg) {
+            if (item._id) {
+                const smm = await SmmSv.findById(item._id);
+                item.DomainSmm = smm ? smm.name : null;
+            } else {
+                item.DomainSmm = null;
+            }
+        }
 
         // Tính tổng tiền hoàn cho từng DomainSmm dựa trên trạng thái đơn tại thời điểm hoàn tiền
         // Lấy tất cả lịch sử hoàn tiền trong range

@@ -18,8 +18,8 @@ exports.refillOrder = async (req, res) => {
             return res.status(403).json({ success: false, error: 'Bạn không có quyền thực hiện!' });
         }
 
-        // Lấy config SmmSv theo domain
-        const smmConfig = await SmmSv.findOne({ name: order.DomainSmm });
+        // Lấy config SmmSv theo ObjectId DomainSmm
+        const smmConfig = await SmmSv.findById(order.DomainSmm);
         if (!smmConfig) return res.status(400).json({ error: 'Lỗi liên hệ admin!1' });
         // Tạo instance SmmApiService
         const smmApi = new SmmApiService(smmConfig.url_api, smmConfig.api_token);
@@ -78,11 +78,11 @@ exports.cancelOrder = async (req, res) => {
         if (order.iscancel) {
             return res.status(400).json({ success: false, error: 'Đơn hàng đã được hủy!' });
         }
-        if (order.status === "Completed") return res.status(400).json({success: false, error: 'Đơn hàng đã hoàn thành không thể hủy' });
-        if (order.status === "Partial" || order.status === "Canceled") return res.status(400).json({success: false, error: 'Đơn hàng đã được hủy' });
-        if (order.cancel !== "on") return res.status(400).json({success: false, error: 'Đơn hàng không hỗ trợ hủy' });
-        // Lấy config SmmSv theo domain
-        const smmConfig = await SmmSv.findOne({ name: order.DomainSmm });
+        if (order.status === "Completed") return res.status(400).json({ success: false, error: 'Đơn hàng đã hoàn thành không thể hủy' });
+        if (order.status === "Partial" || order.status === "Canceled") return res.status(400).json({ success: false, error: 'Đơn hàng đã được hủy' });
+        if (order.cancel !== "on") return res.status(400).json({ success: false, error: 'Đơn hàng không hỗ trợ hủy' });
+        // Lấy config SmmSv theo ObjectId DomainSmm
+        const smmConfig = await SmmSv.findById(order.DomainSmm);
         if (!smmConfig) return res.status(400).json({ error: 'Lỗi liên hệ admin!1' });
         // Tạo instance SmmApiService
         const smmApi = new SmmApiService(smmConfig.url_api, smmConfig.api_token);

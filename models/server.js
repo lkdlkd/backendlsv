@@ -3,7 +3,7 @@ const Order = require('./Order'); // Import model Order
 
 const serviceSchema = new mongoose.Schema({
   //tt bên thứ 3
-  DomainSmm: { type: String, required: true },//bên thứ 3 lấy từ smmsv
+  DomainSmm: { type: mongoose.Schema.Types.ObjectId, ref: "SmmSv", required: true },//bên thứ 3 lấy từ smmsv
   serviceName: { type: String, required: false },//sv name ở bên thứ 3
   originalRate: { type: Number, required: true },//giá lấy bên thứ 3
   // loai dv 

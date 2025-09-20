@@ -42,7 +42,8 @@ async function getOrders(req, res) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('username');
+      .populate('username')
+      .populate('DomainSmm', 'name');
 
     const totalOrders = await Order.countDocuments(filter);
 
@@ -50,8 +51,16 @@ async function getOrders(req, res) {
       return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
     }
 
+    // Convert DomainSmm to name string for each order
+    const ordersWithDomainName = orders.map(order => {
+      const o = order.toObject();
+      if (o.DomainSmm && typeof o.DomainSmm === 'object' && o.DomainSmm.name) {
+        o.DomainSmm = o.DomainSmm.name;
+      }
+      return o;
+    });
     res.status(200).json({
-      orders,
+      orders: ordersWithDomainName,
       currentPage: page,
       totalPages: Math.ceil(totalOrders / limit),
       totalOrders
@@ -84,13 +93,13 @@ async function deleteOrder(req, res) {
 }
 // order
 async function fetchServiceData(magoi) {
-  const serviceFromDb = await Service.findOne({ Magoi: magoi });
+  const serviceFromDb = await Service.findOne({ Magoi: magoi }).populate('DomainSmm', 'name');
   if (!serviceFromDb) throw new Error('Dịch vụ không tồn tại');
   return serviceFromDb;
 }
 
 async function fetchSmmConfig(domain) {
-  const smmSvConfig = await SmmSv.findOne({ name: domain });
+  const smmSvConfig = await SmmSv.findById(domain);
   if (!smmSvConfig || !smmSvConfig.url_api || !smmSvConfig.api_token) {
     throw new Error('Lỗi khi mua dịch vụ, vui lòng ib admin');
   }
@@ -245,7 +254,7 @@ async function addOrder(req, res) {
           second: "2-digit",
         })}\n` +
         `📝 *Ghi chú:* ${note || 'Không có'}\n` +
-        `Nguồn: ${serviceFromDb.DomainSmm}`;
+        `Nguồn: ${serviceFromDb.DomainSmm.name}`;
       await sendTelegramNotification({
         telegramBotToken: teleConfig.botToken,
         telegramChatId: teleConfig.chatId,

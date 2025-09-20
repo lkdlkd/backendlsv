@@ -17,10 +17,10 @@ const orderSchema = new mongoose.Schema({
   totalCost: { type: Number, required: true },// tổng tiền mua
   status: { type: String, default: 'Pending' },// trạng thái đơn hàng
   note: { type: String, default: '' },// ghi chú đơn hàng
-  ObjectLink : { type: String, default: '' }, // link object
-  lai : { type: Number, default: 0 }, // lợi nhuận từ đơn hàng
+  ObjectLink: { type: String, default: '' }, // link object
+  lai: { type: Number, default: 0 }, // lợi nhuận từ đơn hàng
   tientieu: { type: Number, default: 0 }, // tiền tiêu từ đơn hàng
-  DomainSmm: { type: String, default: null }, // tên miền của dịch vụ
+  DomainSmm: { type: mongoose.Schema.Types.ObjectId, ref: "SmmSv", required: true },
   refil: { type: String, enum: ["on", "off"], default: "off" }, // chức năng refil
   cancel: { type: String, enum: ["on", "off"], default: "off" }, // chức năng hủy đơn
   iscancel: { type: Boolean, default: false }, // trạng thái hủy đơn

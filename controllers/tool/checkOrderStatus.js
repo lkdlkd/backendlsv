@@ -46,22 +46,23 @@ async function checkOrderStatus() {
     const groups = {};
 
     for (const order of runningOrders) {
-      // Lấy domainSmm trực tiếp từ order
-      const domainSmm = order.DomainSmm;
-      if (!domainSmm) {
+
+      // Lấy DomainSmm (ObjectId) trực tiếp từ order
+      const domainSmmId = order.DomainSmm;
+      if (!domainSmmId) {
         console.warn(`Không tìm thấy DomainSmm cho đơn ${order.Madon} (SvID: ${order.SvID}, namesv: ${order.namesv})`);
         continue;
       }
 
-      // Cache SmmSv
-      let smmConfig = smmConfigCache[domainSmm];
+      // Cache SmmSv theo ObjectId
+      let smmConfig = smmConfigCache[domainSmmId];
       if (!smmConfig) {
-        smmConfig = await SmmSv.findOne({ name: domainSmm });
+        smmConfig = await SmmSv.findById(domainSmmId);
         if (!smmConfig || !smmConfig.url_api || !smmConfig.api_token) {
           // Nếu không có cấu hình SMM thì bỏ qua đơn này
           continue;
         }
-        smmConfigCache[domainSmm] = smmConfig;
+        smmConfigCache[domainSmmId] = smmConfig;
       }
 
       const groupKey = smmConfig._id.toString();

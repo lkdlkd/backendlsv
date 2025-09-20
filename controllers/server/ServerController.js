@@ -69,22 +69,22 @@ exports.getServer = async (req, res) => {
 
       const totalServices = await Service.countDocuments(filter);
       const services = await Service.find(filter)
-        .populate("category", "name path") // Lấy thông tin tên của Category
-        .populate("type", "name logo") // Lấy thông tin của Platform
+        .populate("category", "name path")
+        .populate("type", "name logo")
+        .populate("DomainSmm" , "name")
         .skip(skip)
         .limit(limit);
-        // .sort({ thutu: -1}); // Sắp xếp theo thutu giảm dần, sau đó đến thời gian thêm
 
       const formattedServices = services.map(service => ({
         _id: service._id,
-        DomainSmm: service.DomainSmm,
+        DomainSmm:  service.DomainSmm.name || "Không xác định",
         serviceName: service.serviceName,
         originalRate: service.originalRate,
         category: service.category ? service.category.name : "Không xác định",
         description: service.description,
         Magoi: service.Magoi,
         thutu: service.thutu,
-        type: service.type ? service.type.name : "không xác định", // Trả về tên của Platform
+        type: service.type ? service.type.name : "không xác định",
         name: service.name,
         path: service.category.path || "",
         rate: service.rate,
@@ -101,8 +101,7 @@ exports.getServer = async (req, res) => {
         createdAt: service.createdAt,
         updatedAt: service.updatedAt,
         tocdodukien: service.tocdodukien || "Chưa cập nhật",
-        logo: service.type ? service.type.logo : "", // Lấy logo của Platform
-        updatedAt: service.updatedAt,
+        logo: service.type ? service.type.logo : "",
         refil: service.refil,
         cancel: service.cancel,
       }));
@@ -120,26 +119,27 @@ exports.getServer = async (req, res) => {
     } else {
       // User thường: chỉ lấy các trường cần thiết
       const services = await Service.find(filter)
-        .populate("category", "name path").populate("type", "name logo");
+        .populate("category", "name path")
+        .populate("type", "name logo")
 
       const formattedServices = services.map(service => ({
         description: service.description,
-        path: service.category.path || "", // Lấy đường dẫn của Category
+        path: service.category.path || "",
         Magoi: service.Magoi,
         id: service.id,
         maychu: service.maychu,
-        getid: service.getid,//chức năng get id sau khi nhập link mua
-        comment: service.comment,//chức năng get id sau khi nhập link mua
-        reaction: service.reaction,//chức năng get id sau khi nhập link mua
-        matlive: service.matlive,//chức năng get id sau khi nhập link mua
+        getid: service.getid,
+        comment: service.comment,
+        reaction: service.reaction,
+        matlive: service.matlive,
         name: service.name,
         rate: service.rate,
         min: service.min,
         max: service.max,
-        type: service.type ? service.type.name : "không xác định", // Trả về tên của Platform
-        category: service.category.name, // Lấy tên của Category
-        tocdodukien: service.tocdodukien || "Chưa cập nhật", // Tốc độ dự kiến
-        logo: service.type ? service.type.logo : "", // Lấy logo của Platform
+        type: service.type ? service.type.name : "không xác định",
+        category: service.category.name,
+        tocdodukien: service.tocdodukien || "Chưa cập nhật",
+        logo: service.type ? service.type.logo : "",
         isActive: service.isActive,
         updatedAt: service.updatedAt,
         refil: service.refil,

@@ -43,10 +43,10 @@ exports.getServices = async (req, res) => {
         // Định dạng các trường cần hiển thị
         const formattedServices = services.map(service => ({
             service: Number(service.Magoi),
-            name: `${service.maychu} ${service.name}`, // Đảm bảo có khoảng trắng
+            name: `${service.maychu} ${service.name}`,
             type: service.comment === "on" ? "Custom Comments" : "Default",
             platform: service.type.name || "không xác định",
-            category: `${service.type.name} | ${service.category.name || "Không xác định"}`, // Kiểm tra nếu category tồn tại
+            category: `${service.type.name} | ${service.category.name || "Không xác định"}`,
             rate: service.rate / 25,
             min: service.min,
             max: service.max,
@@ -65,7 +65,7 @@ exports.getServices = async (req, res) => {
     }
 };
 async function fetchSmmConfig(domain) {
-    const smmSvConfig = await SmmSv.findOne({ name: domain });
+    const smmSvConfig = await SmmSv.findById(domain);
     if (!smmSvConfig || !smmSvConfig.url_api || !smmSvConfig.api_token) {
         throw new Error('Lỗi khi mua dịch vụ, vui lòng ib admin');
     }
@@ -73,7 +73,7 @@ async function fetchSmmConfig(domain) {
 }
 
 async function fetchServiceData(magoi) {
-    const serviceFromDb = await Service.findOne({ Magoi: magoi }).populate("category", "name");;
+    const serviceFromDb = await Service.findOne({ Magoi: magoi }).populate("category", "name").populate("DomainSmm", "name");
     if (!serviceFromDb) throw new Error('Dịch vụ không tồn tại');
     return serviceFromDb;
 }
@@ -181,7 +181,7 @@ exports.AddOrder = async (req, res) => {
             SvID: serviceFromDb.serviceId,
             orderId: purchaseResponse.order,
             namesv: `${serviceFromDb.maychu} ${serviceFromDb.name}`,
-            category: serviceFromDb.category.name || "Không xác định", // Kiểm tra nếu category tồn tại
+            category: serviceFromDb.category.name || "Không xác định",
             link,
             start: 0,
             quantity: qty,
@@ -189,7 +189,7 @@ exports.AddOrder = async (req, res) => {
             totalCost,
             createdAt,
             status: 'Pending',
-            note: "",  // Gán mặc định là chuỗi rỗng khi không có note
+            note: "",
             comments: formattedComments,
             DomainSmm: serviceFromDb.DomainSmm,
             lai: lai,
@@ -239,7 +239,7 @@ exports.AddOrder = async (req, res) => {
                     second: "2-digit",
                 })}\n` +
                 `📝 *Ghi chú:* ${'Không có'}\n` +
-                `Nguồn: ${serviceFromDb.DomainSmm}`;
+                `Nguồn: ${serviceFromDb.DomainSmm.name}`;
             await sendTelegramNotification({
                 telegramBotToken: teleConfig.botToken,
                 telegramChatId: teleConfig.chatId,
@@ -419,7 +419,7 @@ exports.cancelOrder = async (req, res) => {
                     continue;
                 }
                 // Lấy config SmmSv theo domain
-                const smmConfig = await SmmSv.findOne({ name: ordersDoc.DomainSmm });
+                const smmConfig = await SmmSv.findById(order.DomainSmm);
                 if (!smmConfig) {
                     result.cancel = { error: 'Đơn hàng không thể hủy' };
                     results.push(result);
