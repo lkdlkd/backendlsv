@@ -68,16 +68,29 @@ exports.getServer = async (req, res) => {
       const skip = (page - 1) * limit;
 
       const totalServices = await Service.countDocuments(filter);
-      const services = await Service.find(filter)
-        .populate("category", "name path")
-        .populate("type", "name logo")
-        .populate("DomainSmm" , "name")
+      let services = await Service.find(filter)
+        .populate("category", "name path thutu")
+        .populate("type", "name logo thutu")
+        .populate("DomainSmm", "name")
         .skip(skip)
         .limit(limit);
 
+      // Sort order strictly: type.thutu -> category.thutu -> service.thutu
+      services = services.sort((a, b) => {
+        const ta = a.type?.thutu ?? 999999;
+        const tb = b.type?.thutu ?? 999999;
+        if (ta !== tb) return ta - tb;
+        const cta = a.category?.thutu ?? 999999;
+        const ctb = b.category?.thutu ?? 999999;
+        if (cta !== ctb) return cta - ctb;
+        const sta = typeof a.thutu === 'number' ? a.thutu : 999999;
+        const stb = typeof b.thutu === 'number' ? b.thutu : 999999;
+        return sta - stb;
+      });
+
       const formattedServices = services.map(service => ({
         _id: service._id,
-        DomainSmm:  service.DomainSmm.name || "Không xác định",
+        DomainSmm: service.DomainSmm.name || "Không xác định",
         serviceName: service.serviceName,
         originalRate: service.originalRate,
         category: service.category ? service.category.name : "Không xác định",
@@ -118,9 +131,21 @@ exports.getServer = async (req, res) => {
       });
     } else {
       // User thường: chỉ lấy các trường cần thiết
-      const services = await Service.find(filter)
-        .populate("category", "name path")
-        .populate("type", "name logo")
+      let services = await Service.find(filter)
+        .populate("category", "name path thutu")
+        .populate("type", "name logo thutu");
+
+      services = services.sort((a, b) => {
+        const ta = a.type?.thutu ?? 999999;
+        const tb = b.type?.thutu ?? 999999;
+        if (ta !== tb) return ta - tb;
+        const cta = a.category?.thutu ?? 999999;
+        const ctb = b.category?.thutu ?? 999999;
+        if (cta !== ctb) return cta - ctb;
+        const sta = typeof a.thutu === 'number' ? a.thutu : 999999;
+        const stb = typeof b.thutu === 'number' ? b.thutu : 999999;
+        return sta - stb;
+      });
 
       const formattedServices = services.map(service => ({
         description: service.description,
@@ -222,7 +247,7 @@ exports.getServerByTypeAndPath = async (req, res) => {
           "category.path": { $regex: path, $options: "i" }
         }
       },
-      { $sort: { thutu: 1} } // Sắp xếp theo thutu giảm dần, sau đó đến thời gian thêm
+      { $sort: { thutu: 1 } } // Sắp xếp theo thutu giảm dần, sau đó đến thời gian thêm
     ]);
 
     // Lấy thông tin note và modal_show duy nhất từ category
