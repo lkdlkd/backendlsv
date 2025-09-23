@@ -173,7 +173,7 @@ async function addOrder(req, res) {
     if (!purchaseResponse || !purchaseResponse.order) {
       if (purchaseResponse && purchaseResponse.error) {
         const err = purchaseResponse.error.toLowerCase();
-        if (err.includes('số dư') || err.includes('tiền')) {
+        if (err.includes('số dư') || err.includes('balance') || err.includes('xu')|| err.includes('tiền')) {
           throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
         } else {
           throw new Error(purchaseResponse.error);
