@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema({
     }
   ], // Lưu lịch sử đăng nhập
   domain: { type: String, default: null },
+  // 2FA fields
+  twoFactorEnabled: { type: Boolean, default: false },
+  twoFactorSecret: { type: String, select: false }, // Secret chính đã xác thực
+  twoFactorTempSecret: { type: String, select: false }, // Secret tạm trong bước setup
 
 }, { timestamps: true }); // Tự động tạo createdAt và updatedAt
 

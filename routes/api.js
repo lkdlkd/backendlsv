@@ -30,6 +30,10 @@ router.post('/cancel', authenticate.authenticateUser, refillCancelController.can
 //auth
 router.post('/login', user.login);//ok
 router.post('/register', user.register);//ok
+// 2FA routes
+router.post('/2fa/setup', authenticate.authenticateUser, user.setup2FA); // Tạo secret tạm & QR
+router.post('/2fa/verify', authenticate.authenticateUser, user.verify2FA); // Xác minh & bật 2FA
+router.post('/2fa/disable', authenticate.authenticateUser, user.disable2FA); // Tắt 2FA
 // noti
 
 // banking

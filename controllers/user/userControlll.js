@@ -4,10 +4,12 @@ const HistoryUser = require("../../models/History");
 const axios = require("axios");
 const crypto = require("crypto");
 const Telegram = require('../../models/Telegram');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 
 exports.login = async (req, res) => {
   try {
-    let { username, password } = req.body;
+    let { username, password, token: otpToken } = req.body;
 
     username = username.toLowerCase();
 
@@ -20,6 +22,25 @@ exports.login = async (req, res) => {
     if (user.status !== "active") {
       return res.status(403).json({ error: "Tài khoản đã bị khóa" });
     }
+    if (user.twoFactorEnabled) {
+      if (!otpToken) {
+        return res.status(200).json({ twoFactorRequired: true, message: 'Yêu cầu mã 2FA' });
+      }
+      // Cần lấy secret (đã bật) gồm trường twoFactorSecret (ẩn theo select:false)
+      const userWithSecret = await User.findById(user._id).select('+twoFactorSecret');
+      if (!userWithSecret || !userWithSecret.twoFactorSecret) {
+        return res.status(500).json({ error: 'Không tìm thấy secret 2FA' });
+      }
+      const verified = speakeasy.totp.verify({
+        secret: userWithSecret.twoFactorSecret,
+        encoding: 'base32',
+        token: otpToken,
+        window: 1,
+      });
+      if (!verified) {
+        return res.status(401).json({ error: 'Mã 2FA không chính xác' });
+      }
+    }
 
     // Lưu lịch sử đăng nhập vào mảng loginHistory
     // Ưu tiên lấy IP từ header X-User-IP (IP thật từ client), sau đó mới dùng x-forwarded-for
@@ -31,11 +52,10 @@ exports.login = async (req, res) => {
     user.loginHistory = user.loginHistory || [];
     user.loginHistory.push({ ip, agent: userAgent, time: new Date() });
     await user.save();
-    // ✅ Tạo token mới
     const token = jwt.sign(
       { username: user.username, userId: user._id, role: user.role },
-      process.env.secretKey, // Có thể thay bằng biến env như process.env.JWT_SECRET
-      { expiresIn: "7d" } // Có thể thêm thời gian sống token
+      process.env.secretKey,
+      { expiresIn: '7d' }
     );
 
     // Nếu là admin, gửi thông báo Telegram
@@ -69,10 +89,113 @@ exports.login = async (req, res) => {
       }
     }
     // ✅ Trả về token mới
-    return res.status(200).json({ token, role: user.role, username: user.username });
+    return res.status(200).json({ token, role: user.role, username: user.username, twoFactorEnabled: user.twoFactorEnabled });
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ error: "Có lỗi xảy ra khi đăng nhập" });
+  }
+};
+
+// Bắt đầu thiết lập 2FA: tạo secret tạm & trả về QR code + otpauth URL
+exports.setup2FA = async (req, res) => {
+  try {
+    const currentUser = req.user;
+    const user = await User.findById(currentUser.userId || currentUser._id);
+    if (!user) return res.status(404).json({ error: 'User không tồn tại' });
+
+    // Nếu đã bật 2FA thì không nên cho setup lại (buộc disable trước)
+    if (user.twoFactorEnabled) {
+      return res.status(400).json({ status: false, message: 'Bạn đã bật 2FA. Hãy tắt trước nếu muốn tạo lại.' });
+    }
+
+    const secret = speakeasy.generateSecret({
+      name: `App-${user.username}`,
+      length: 20,
+    });
+
+    user.twoFactorTempSecret = secret.base32;
+    await user.save();
+
+    // Tạo QR code từ otpauth_url
+    const qrDataURL = await QRCode.toDataURL(secret.otpauth_url);
+
+    return res.status(200).json({
+      status: true,
+      otpauth_url: secret.otpauth_url,
+      qr: qrDataURL,
+      base32: secret.base32,
+      message: 'Quét QR trong Google Authenticator và xác minh bằng mã OTP.'
+    });
+  } catch (err) {
+    console.error('Setup 2FA error:', err);
+    return res.status(500).json({ error: 'Lỗi server khi setup 2FA' });
+  }
+};
+
+// Xác minh mã OTP để kích hoạt 2FA (dùng secret tạm)
+exports.verify2FA = async (req, res) => {
+  try {
+    const currentUser = req.user;
+    // Chấp nhận cả 'token' hoặc 'code' từ client cho linh hoạt
+    const { token, code } = req.body;
+    const otp = token || code;
+    if (!otp) return res.status(400).json({ error: 'Thiếu mã OTP' });
+
+    const user = await User.findById(currentUser.userId || currentUser._id).select('+twoFactorTempSecret +twoFactorSecret');
+    if (!user) return res.status(404).json({ status: false, message: 'User không tồn tại' });
+    if (user.twoFactorEnabled) return res.status(400).json({ status: false, message: '2FA đã được bật' });
+    if (!user.twoFactorTempSecret) return res.status(400).json({ status: false, message: 'Chưa tạo secret tạm' });
+
+    // Speakeasy yêu cầu field 'token', không phải 'code'.
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorTempSecret,
+      encoding: 'base32',
+      token: otp,
+      window: 1, // Cho phép lệch 1 bước thời gian (±30s)
+    });
+    if (!verified) {
+      return res.status(400).json({ status: false, message: 'Mã OTP không chính xác hoặc đã hết hạn' });
+    }
+
+    // Chuyển secret tạm thành secret chính & bật 2FA
+    user.twoFactorSecret = user.twoFactorTempSecret;
+    user.twoFactorTempSecret = undefined;
+    user.twoFactorEnabled = true;
+    await user.save();
+
+    return res.status(200).json({ status: true, message: 'Kích hoạt 2FA thành công', twoFactorEnabled: true });
+  } catch (err) {
+    console.error('Verify 2FA error:', err);
+    return res.status(500).json({ status: false, message: 'Lỗi server khi verify 2FA' });
+  }
+};
+
+// Tắt 2FA (yêu cầu OTP hiện tại nếu đang bật để tránh bị lạm dụng)
+exports.disable2FA = async (req, res) => {
+  try {
+    const currentUser = req.user;
+    const { code } = req.body; // OTP để xác nhận tắt
+    const user = await User.findById(currentUser.userId || currentUser._id).select('+twoFactorSecret');
+    if (!user) return res.status(404).json({ error: 'User không tồn tại' });
+    if (!user.twoFactorEnabled) return res.status(400).json({ status: false, message: '2FA chưa bật' });
+    console.log(code);
+    // Xác thực OTP trước khi tắt
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: code,
+      window: 1,
+    });
+    if (!verified) return res.status(401).json({ status: false, message: 'Mã OTP không chính xác hoặc đã hết hạn' });
+
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = undefined;
+    user.twoFactorTempSecret = undefined;
+    await user.save();
+    return res.status(200).json({ status: true, message: 'Đã tắt 2FA thành công', twoFactorEnabled: false });
+  } catch (err) {
+    console.error('Disable 2FA error:', err);
+    return res.status(500).json({ error: 'Lỗi server khi tắt 2FA' });
   }
 };
 
@@ -188,6 +311,7 @@ exports.getMe = async (req, res) => {
       createdAt: user.createdAt,
       role: user.role,
       status: user.status,
+      twoFactorEnabled: user.twoFactorEnabled,
       token: user.apiKey, // Hiển thị API Key thay vì token
       tongnap: user.tongnap,
       tongnapthang: user.tongnapthang,
