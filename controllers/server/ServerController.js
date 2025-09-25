@@ -90,7 +90,8 @@ exports.getServer = async (req, res) => {
 
       const formattedServices = services.map(service => ({
         _id: service._id,
-        DomainSmm: service.DomainSmm.name || "Không xác định",
+        // Sử dụng optional chaining để tránh lỗi khi không có DomainSmm được populate
+        DomainSmm: service.DomainSmm?.name || "Không xác định",
         serviceName: service.serviceName,
         originalRate: service.originalRate,
         category: service.category ? service.category.name : "Không xác định",
@@ -99,7 +100,8 @@ exports.getServer = async (req, res) => {
         thutu: service.thutu,
         type: service.type ? service.type.name : "không xác định",
         name: service.name,
-        path: service.category.path || "",
+        // Tránh lỗi khi category có thể không tồn tại
+        path: service.category?.path || "",
         rate: service.rate,
         maychu: service.maychu,
         min: service.min,
@@ -149,7 +151,7 @@ exports.getServer = async (req, res) => {
 
       const formattedServices = services.map(service => ({
         description: service.description,
-        path: service.category.path || "",
+        path: service.category?.path || "",
         Magoi: service.Magoi,
         id: service.id,
         maychu: service.maychu,
@@ -162,7 +164,7 @@ exports.getServer = async (req, res) => {
         min: service.min,
         max: service.max,
         type: service.type ? service.type.name : "không xác định",
-        category: service.category.name,
+        category: service.category?.name || "Không xác định",
         tocdodukien: service.tocdodukien || "Chưa cập nhật",
         logo: service.type ? service.type.logo : "",
         isActive: service.isActive,
@@ -273,8 +275,8 @@ exports.getServerByTypeAndPath = async (req, res) => {
       reaction: service.reaction,
       matlive: service.matlive,
       type: service.type,
-      category: service.category.name,
-      path: service.category.path,
+      category: service.category?.name || "Không xác định",
+      path: service.category?.path || "",
       isActive: service.isActive,
       tocdodukien: service.tocdodukien || "Chưa cập nhật",
       updatedAt: service.updatedAt,

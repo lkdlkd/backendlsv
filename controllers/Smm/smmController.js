@@ -25,20 +25,35 @@ exports.getAllPartners = async (req, res) => {
         }
         const partners = await SmmSv.find();
         // Nếu có SmmApiService, lấy balance cho từng partner đang hoạt động
-        const partnersWithBalance = await Promise.all(partners.map(async (partner) => {
-            let balance = null;
-            if (partner.status === 'on' && partner.url_api && partner.api_token) {
-                try {
-                    const smmService = new SmmApiService(partner.url_api, partner.api_token);
-                    const balanceData = await smmService.balance();
-                    balance = balanceData.balance * partner.tigia || 1;
-                } catch (err) {
-                    balance = { error: err.message };
+        const partnersWithBalance = await Promise.all(
+            partners.map(async (partner) => {
+                let balance = null;
+
+                if (partner.status === "on" && partner.url_api && partner.api_token) {
+                    try {
+                        const smmService = new SmmApiService(partner.url_api, partner.api_token);
+                        const balanceData = await smmService.balance();
+
+                        // Ép kiểu về số
+                        let rawBalance = parseFloat(balanceData.balance);
+
+                        if (balanceData.currency === "USD") {
+                            balance =  (rawBalance * (partner.tigia || 1) * 1000);
+                        } else if (balanceData.currency === "XU") {
+                            balance = rawBalance * (partner.tigia || 1) ;
+                            // ví dụ partner.tigia = 0.0117 => 45,833,500 * 0.0117 = ~536,000
+                        } else {
+                            balance = rawBalance; // fallback
+                        }
+                    } catch (err) {
+                        balance = { error: err.message };
+                    }
                 }
-            }
-            
-            return { ...partner.toObject(), balance };
-        }));
+
+                return { ...partner.toObject(), balance };
+            })
+        );
+
         res.status(200).json(partnersWithBalance);
     } catch (error) {
         res.status(500).json({ error: error.message });
