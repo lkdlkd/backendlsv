@@ -77,7 +77,9 @@ exports.getAllPartners = async (req, res) => {
                     balanceStatus = 'fetching';
                     const balanceData = await withTimeout(smmService.balance(), timeoutMs);
                     let rawBalance = parseFloat(balanceData.balance);
-                    if (Number.isNaN(rawBalance)) throw new Error('invalid balance format');
+                    if (Number.isNaN(rawBalance)) {
+                        throw new Error(balanceData.error || 'lỗi');
+                    }
                     if (balanceData.currency === 'USD') {
                         balance = rawBalance * (partner.tigia || 1) * 1000;
                     } else if (balanceData.currency === 'XU') {

@@ -58,6 +58,9 @@ let bot = null;
 let botRetry = 0;
 let botRestartTimer = null;
 const MAX_RETRY_DELAY = 30000; // 30s
+let currentBotToken = null; // Lưu token hiện tại để phát hiện thay đổi
+let telegramConfigWatcherStarted = false;
+let telegramConfigWatcherTimer = null;
 
 async function scheduleBotRestart(reason) {
     if (botRestartTimer) return; // tránh lên lịch nhiều lần
@@ -75,6 +78,12 @@ async function initTelegramBot() {
         const teleConfig = await Telegram.findOne();
         if (!teleConfig || !teleConfig.bot_notify) {
             console.warn('Telegram bot token (bot_notify) chưa cấu hình. Bỏ qua khởi tạo bot.');
+            // Nếu trước đó có bot đang chạy thì dừng
+            if (bot) {
+                try { await bot.stopPolling(); } catch (_) {}
+                bot = null;
+            }
+            currentBotToken = null;
             return;
         }
         const token = teleConfig.bot_notify;
@@ -89,6 +98,7 @@ async function initTelegramBot() {
         global.bot = bot; // giúp helper sendTelegramMessage dùng lại instance
         botRetry = 0; // reset retry counter khi thành công
         console.log('Telegram bot polling started.');
+    currentBotToken = token;
 
         bot.on('message', async (msg) => {
             try {
@@ -122,42 +132,64 @@ async function initTelegramBot() {
 
 initTelegramBot();
 
-// Cron: gửi số dư sau 2 giờ kể từ khi liên kết Telegram (kiểm tra mỗi 5 phút)
-cron.schedule('*/5 * * * *', async () => {
-    try {
-        const now = new Date();
-        const threshold = new Date(now.getTime() - 1 * 60 * 1000);
-
-        // const threshold = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-        const users = await User.find({
-            telegramChatId: { $ne: null },
-            telegramLinkedAt: { $lte: threshold },
-            telegramBalanceSent: false
-        }).limit(50);
-        if (!users.length) return;
-        const teleConfig = await Telegram.findOne();
-        if (!teleConfig || !teleConfig.bot_notify) return;
-        for (const u of users) {
-            try {
-                if (bot) {
-                    await bot.sendMessage(u.telegramChatId, `Số dư hiện tại của bạn: ${Number(Math.floor(Number(u.balance))).toLocaleString("en-US")} VNĐ`);
-                } else {
-                    await axios.post(`https://api.telegram.org/bot${teleConfig.bot_notify}/sendMessage`, {
-                        chat_id: u.telegramChatId,
-                        text: `Số dư hiện tại của bạn: ${Number(Math.floor(Number(u.balance))).toLocaleString("en-US")} VNĐ`,
-                        parse_mode: 'Markdown'
-                    });
-                }
-                u.telegramBalanceSent = true;
-                await u.save();
-            } catch (e) {
-                console.error('Telegram balance send fail for user', u._id.toString(), e.message);
+// ===== Watcher tự động phát hiện thay đổi bot_notify và restart bot =====
+function startTelegramConfigWatcher() {
+    if (telegramConfigWatcherStarted) return;
+    telegramConfigWatcherStarted = true;
+    const interval = parseInt(process.env.TELEGRAM_WATCH_INTERVAL_MS || '60000'); // mặc định 60s
+    telegramConfigWatcherTimer = setInterval(async () => {
+        try {
+            const teleConfig = await Telegram.findOne();
+            const newToken = teleConfig && teleConfig.bot_notify ? teleConfig.bot_notify : null;
+            if (newToken !== currentBotToken) {
+                console.log('[TelegramBot] Phát hiện thay đổi bot_notify. Restart bot...');
+                botRetry = 0; // reset retry để tránh delay không cần thiết
+                await initTelegramBot();
             }
+        } catch (e) {
+            console.error('[TelegramBot] watcher error:', e.message);
         }
-    } catch (err) {
-        console.error('Cron telegram balance error:', err.message);
-    }
-});
+    }, Math.max(5000, interval));
+}
+
+startTelegramConfigWatcher();
+
+// Cron: gửi số dư sau 2 giờ kể từ khi liên kết Telegram (kiểm tra mỗi 5 phút)
+// cron.schedule('*/5 * * * *', async () => {
+//     try {
+//         const now = new Date();
+//         const threshold = new Date(now.getTime() - 1 * 60 * 1000);
+
+//         // const threshold = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+//         const users = await User.find({
+//             telegramChatId: { $ne: null },
+//             telegramLinkedAt: { $lte: threshold },
+//             telegramBalanceSent: false
+//         }).limit(50);
+//         if (!users.length) return;
+//         const teleConfig = await Telegram.findOne();
+//         if (!teleConfig || !teleConfig.bot_notify) return;
+//         for (const u of users) {
+//             try {
+//                 if (bot) {
+//                     await bot.sendMessage(u.telegramChatId, `Số dư hiện tại của bạn: ${Number(Math.floor(Number(u.balance))).toLocaleString("en-US")} VNĐ`);
+//                 } else {
+//                     await axios.post(`https://api.telegram.org/bot${teleConfig.bot_notify}/sendMessage`, {
+//                         chat_id: u.telegramChatId,
+//                         text: `Số dư hiện tại của bạn: ${Number(Math.floor(Number(u.balance))).toLocaleString("en-US")} VNĐ`,
+//                         parse_mode: 'Markdown'
+//                     });
+//                 }
+//                 u.telegramBalanceSent = true;
+//                 await u.save();
+//             } catch (e) {
+//                 console.error('Telegram balance send fail for user', u._id.toString(), e.message);
+//             }
+//         }
+//     } catch (err) {
+//         console.error('Cron telegram balance error:', err.message);
+//     }
+// });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

@@ -11,6 +11,11 @@ class SmmApiService {
       key: this.apiKey,
       ...payload,
     });
+    // console.log('Payload gửi đến SMM API:', {
+    //   key: this.apiKey,
+    //   ...payload,
+    // });
+    // console.log('Phản hồi từ SMM API:', response.data);
     return response.data;
   }
 
