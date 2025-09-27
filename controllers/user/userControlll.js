@@ -844,6 +844,8 @@ exports.processTelegramCommand = async (chatId, text) => {
         await sendTelegramMessage(chatId, 'Không tìm thấy đơn hàng của bạn với mã này.');
         return;
       }
+      const createdAtVN = new Date(order.createdAt.getTime() + 7 * 60 * 60 * 1000);
+
       await sendTelegramMessage(chatId,
         `🔎 Trạng thái đơn hàng\n` +
         `• Mã đơn: ${order.Madon}\n` +
@@ -853,7 +855,7 @@ exports.processTelegramCommand = async (chatId, text) => {
         `• Đã chạy: ${order.dachay || 0}\n` +
         `• Trạng thái: ${order.status}\n` +
         `• Link: ${order.link}\n` +
-        `• Tạo lúc: ${order.createdAt.toLocaleString("vi-VN", {
+        `• Tạo lúc: ${createdAtVN.toLocaleString("vi-VN", {
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
