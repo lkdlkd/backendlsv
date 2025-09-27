@@ -11,6 +11,7 @@ exports.getConfigweb = async (req, res) => {
         tieude: "",
         logo: "",
         favicon: "",
+        linktele: "https://t.me/noti_web_245_bot",
         title: "",
         lienhe: [
           {
@@ -38,7 +39,7 @@ exports.updateConfigweb = async (req, res) => {
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ message: 'Chỉ admin mới có quyền truy cập' });
     }
-    const { tieude, title, logo, favicon, lienhe, cuphap } = req.body;
+    const { tieude, title, logo, favicon, lienhe, cuphap, linktele } = req.body;
 
     // Tìm cấu hình hiện tại
     const config = await Configweb.findOne();
@@ -56,9 +57,11 @@ exports.updateConfigweb = async (req, res) => {
     config.tieude = tieude !== undefined ? tieude : "";
     config.title = title !== undefined ? title : "";
     config.logo = logo !== undefined ? logo : "";
+    
     config.favicon = favicon !== undefined ? favicon : "";
     config.lienhe = lienhe !== undefined ? lienhe : [];
     config.cuphap = cuphap !== undefined && cuphap.trim() !== "" ? cuphap : config.cuphap || "naptien"; // Kiểm tra giá trị trống cho cuphap
+    config.linktele = linktele !== undefined ? linktele : config.linktele || "https://t.me/noti_web_245_bot"; // Kiểm tra giá trị trống cho linktele
 
     await config.save();
 

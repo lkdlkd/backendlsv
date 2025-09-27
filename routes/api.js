@@ -106,6 +106,8 @@ router.put('/configtele',authenticate.authenticateAdmin, configTeleController.up
 // Route để lấy danh sách dịch vụ từ SMM
 router.get('/getservices/:id', authenticate.authenticateAdmin, SmmController.getServices);
 router.get('/transactions', authenticate.authenticateUser, banking.getTransactions);
+// Telegram linking
+// router.post('/user/telegram/link/start', authenticate.authenticateUser, user.startTelegramLink);
 
 router.get('/promotions', authenticate.authenticateUser, getPromotions);
 router.post('/promotions', authenticate.authenticateAdmin, createPromotion);

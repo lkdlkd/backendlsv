@@ -13,6 +13,7 @@ exports.getTelegramConfig = async (req, res) => {
             config = {
                 botToken: "",
                 chatId: "",
+                bot_notify : "7373571777:AAHJL0Y4I719aWxOecbWiS561x8J6wjKmbI",
             };
         }
         res.status(200).json({ success: true, data: config });
@@ -28,14 +29,15 @@ exports.updateTelegramConfig = async (req, res) => {
         if (!user || user.role !== 'admin') {
             return res.status(403).json({ message: 'Chỉ admin mới có quyền cập nhật' });
         }
-        const { botToken, chatId } = req.body;
+        const { botToken, chatId , bot_notify } = req.body;
         let config = await Telegram.findOne();
         if (config) {
             config.botToken = botToken;
             config.chatId = chatId;
+            config.bot_notify = bot_notify;
             await config.save();
         } else {
-            config = await Telegram.create({ botToken, chatId });
+            config = await Telegram.create({ botToken, chatId, bot_notify });
         }
         res.json({ message: 'Cập nhật cấu hình Telegram thành công', config });
     } catch (error) {

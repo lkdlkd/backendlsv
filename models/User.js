@@ -26,6 +26,11 @@ const userSchema = new mongoose.Schema({
   twoFactorSecret: { type: String, select: false }, // Secret chính đã xác thực
   twoFactorTempSecret: { type: String, select: false }, // Secret tạm trong bước setup
 
+  // Telegram linking fields
+  telegramChatId: { type: String, index: true },
+  telegramLinkedAt: { type: Date },
+  telegramBalanceSent: { type: Boolean, default: false },
+
 }, { timestamps: true }); // Tự động tạo createdAt và updatedAt
 
 // Pre-save hook: mã hóa mật khẩu và cập nhật userId nếu chưa có

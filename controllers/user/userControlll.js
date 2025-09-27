@@ -6,6 +6,30 @@ const crypto = require("crypto");
 const Telegram = require('../../models/Telegram');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
+const Order = require('../../models/Order');
+// Helper gửi tin nhắn Telegram
+async function sendTelegramMessage(chatId, text) {
+  try {
+    const teleConfig = await Telegram.findOne();
+    if (!teleConfig || !teleConfig.bot_notify) return false;
+    if (global.bot && typeof global.bot.sendMessage === 'function') {
+      // Escape characters that can break basic Markdown parsing (focus on underscore which caused 400 errors)
+      const safeText = typeof text === 'string' ? text.replace(/_/g, '\\_') : text;
+      await global.bot.sendMessage(chatId, safeText, { parse_mode: 'Markdown' });
+    } else {
+      const safeText = typeof text === 'string' ? text.replace(/_/g, '\\_') : text;
+      await axios.post(`https://api.telegram.org/bot${teleConfig.bot_notify}/sendMessage`, {
+        chat_id: chatId,
+        text: safeText,
+        parse_mode: 'Markdown'
+      });
+    }
+    return true;
+  } catch (e) {
+    console.error('Telegram send error:', e.message);
+    return false;
+  }
+}
 
 exports.login = async (req, res) => {
   try {
@@ -317,6 +341,7 @@ exports.getMe = async (req, res) => {
       tongnapthang: user.tongnapthang,
       updatedAt: user.updatedAt,
       userId: user._id,
+      telegramChat: user.telegramChatId ? true : false,
       username: user.username,
       loginHistory,
     });
@@ -718,6 +743,129 @@ exports.getHistory = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi lấy lịch sử:", error);
     res.status(500).json({ message: "Lỗi server", error });
+  }
+};
+
+// Bắt đầu tạo mã liên kết Telegram
+// exports.startTelegramLink = async (req, res) => {
+//   try {
+//     const currentUser = req.user;
+//     const user = await User.findById(currentUser.userId || currentUser._id);
+//     if (!user) return res.status(404).json({ error: 'User không tồn tại' });
+//     if (user.telegramChatId) {
+//       return res.status(400).json({ message: 'Bạn đã liên kết Telegram rồi.' });
+//     }
+//     // Dùng apiKey làm mã liên kết luôn
+//     if (!user.apiKey) {
+//       user.apiKey = crypto.randomBytes(32).toString('hex');
+//       await user.save();
+//     }
+//     return res.status(200).json({ code: user.apiKey });
+//   } catch (err) {
+//     console.error('startTelegramLink error:', err);
+//     return res.status(500).json({ error: 'Lỗi server' });
+//   }
+// };
+
+// Hàm dùng chung để xử lý lệnh (dùng cho polling)
+exports.processTelegramCommand = async (chatId, text) => {
+  try {
+    if (text === '/start') {
+      await sendTelegramMessage(chatId, `Chào bạn! Vui lòng truy cập vào: ${process.env.URL_WEBSITE || ''}/profile\n1. Sao chép API KEY của bạn\n2. Dán API KEY vào khung chat này.\n3. Sau khi liên kết: dùng /balance để xem số dư, /order MÃ ĐƠN để kiểm tra đơn, /unlink để hủy liên kết.\n4. Gõ /help để xem hướng dẫn.`);
+      return;
+    }
+    if (text === '/help') {
+      await sendTelegramMessage(chatId, `Hướng dẫn sử dụng bot:\n1. Vào website của bạn, đăng nhập và vào trang /profile để sao chép API KEY.\n2. Quay lại đây và gửi API KEY vào khung chat này để liên kết tài khoản.\n3. Sau khi liên kết thành công, bạn có thể dùng các lệnh sau:\n/balance - Xem số dư hiện tại\n/order MÃ ĐƠN - Kiểm tra trạng thái đơn của bạn\n/unlink - Hủy liên kết tài khoản Telegram\n/help - Xem hướng dẫn sử dụng`);
+      return;
+    }
+    if (/^[a-fA-F0-9]{64}$/.test(text)) {
+      const apiKeyRaw = text.trim();
+      const user = await User.findOne({ apiKey: { $regex: `^${apiKeyRaw}$`, $options: 'i' } });
+      if (!user) {
+        await sendTelegramMessage(chatId, 'API KEY không hợp lệ. Vào /profile để copy đúng.');
+        return;
+      }
+      if (user.telegramChatId) {
+        await sendTelegramMessage(chatId, 'Tài khoản này đã liên kết trước đó. Dùng /unlink nếu muốn hủy.');
+        return;
+      }
+      const existing = await User.findOne({ telegramChatId: String(chatId) });
+      if (existing) {
+        await sendTelegramMessage(chatId, 'Chat này đã liên kết với tài khoản khác. Dùng /unlink nếu muốn đổi.');
+        return;
+      }
+      user.telegramChatId = String(chatId);
+      user.telegramLinkedAt = new Date();
+      user.telegramBalanceSent = false;
+      await user.save();
+      await sendTelegramMessage(chatId, `Liên kết thành công tài khoản: ${user.username}. Dùng /balance để xem số dư.`);
+      return;
+    }
+    if (text === '/unlink') {
+      const user = await User.findOne({ telegramChatId: String(chatId) });
+      if (!user) {
+        await sendTelegramMessage(chatId, 'Chưa liên kết để hủy.');
+        return;
+      }
+      user.telegramChatId = null;
+      user.telegramLinkedAt = null;
+      await user.save();
+      await sendTelegramMessage(chatId, 'Đã hủy liên kết.Vào website để lấy API KEY và gửi để liên kết lại.');
+      return;
+    }
+    if (text === '/balance') {
+      const user = await User.findOne({ telegramChatId: String(chatId) });
+      if (!user) {
+        await sendTelegramMessage(chatId, 'Chưa liên kết. Vào website để lấy API KEY và gửi lại.');
+        return;
+      }
+      await sendTelegramMessage(chatId, `Số dư hiện tại của bạn: ${Number(Math.floor(Number(user.balance))).toLocaleString("en-US")} VNĐ`);
+      return;
+    }
+    if (text.startsWith('/order')) {
+      const parts = text.split(/\s+/);
+      if (parts.length !== 2) {
+        await sendTelegramMessage(chatId, 'Sai cú pháp. Dùng: /order MÃ ĐƠN');
+        return;
+      }
+      const code = parts[1].trim();
+      const user = await User.findOne({ telegramChatId: String(chatId) });
+      if (!user) {
+        await sendTelegramMessage(chatId, 'Chưa liên kết. Gửi API KEY trước.');
+        return;
+      }
+      // Tìm đơn theo Madon thuộc về user
+      let order = await Order.findOne({ Madon: code, username: user.username });
+      if (!order) {
+        // fallback tìm theo orderId nếu người dùng gõ mã hệ thống khác
+        order = await Order.findOne({ orderId: code, username: user.username });
+      }
+      if (!order) {
+        await sendTelegramMessage(chatId, 'Không tìm thấy đơn hàng của bạn với mã này.');
+        return;
+      }
+      await sendTelegramMessage(chatId,
+        `🔎 Trạng thái đơn hàng\n` +
+        `• Mã đơn: ${order.Madon}\n` +
+        `• Dịch vụ: ${order.namesv}\n` +
+        `• Số lượng: ${order.quantity || 0}\n` +
+        `• Bắt đầu: ${order.start || 0}\n` +
+        `• Đã chạy: ${order.dachay || 0}\n` +
+        `• Trạng thái: ${order.status}\n` +
+        `• Link: ${order.link}\n` +
+        `• Tạo lúc: ${order.createdAt.toLocaleString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })}\n`);
+      return;
+    }
+    await sendTelegramMessage(chatId, 'Lệnh không hợp lệ. Gõ /start để xem hướng dẫn.');
+  } catch (e) {
+    console.error('processTelegramCommand error:', e.message);
   }
 };
 
