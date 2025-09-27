@@ -775,7 +775,7 @@ exports.processTelegramCommand = async (chatId, text) => {
       return;
     }
     if (text === '/help') {
-      await sendTelegramMessage(chatId, `Hướng dẫn sử dụng bot:\n1. Vào website của bạn, đăng nhập và vào trang /profile để sao chép API KEY.\n2. Quay lại đây và gửi API KEY vào khung chat này để liên kết tài khoản.\n3. Sau khi liên kết thành công, bạn có thể dùng các lệnh sau:\n/balance - Xem số dư hiện tại\n/order MÃ ĐƠN - Kiểm tra trạng thái đơn của bạn\n/unlink - Hủy liên kết tài khoản Telegram\n/help - Xem hướng dẫn sử dụng`);
+      await sendTelegramMessage(chatId, `Hướng dẫn sử dụng bot:\n1. Vào website của bạn, đăng nhập và vào trang ${process.env.URL_WEBSITE || ''}/profile để sao chép API KEY.\n2. Quay lại đây và gửi API KEY vào khung chat này để liên kết tài khoản.\n3. Sau khi liên kết thành công, bạn có thể dùng các lệnh sau:\n/balance - Xem số dư hiện tại\n/order MÃ ĐƠN - Kiểm tra trạng thái đơn của bạn\n/unlink - Hủy liên kết tài khoản Telegram\n/help - Xem hướng dẫn sử dụng`);
       return;
     }
     if (/^[a-fA-F0-9]{64}$/.test(text)) {
