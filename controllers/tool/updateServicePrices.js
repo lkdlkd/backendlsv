@@ -195,4 +195,4 @@ setInterval(() => {
   updateServicePrices();
   // updateTypeToPlatformId();
 
-}, 60000); // 30,000 milliseconds = 30 seconds
+}, 30000); // 30,000 milliseconds = 30 seconds

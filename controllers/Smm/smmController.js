@@ -3,7 +3,7 @@ const SmmApiService = require('../../controllers/Smm/smmServices'); // Đảm b�
 
 // Cấu hình giới hạn & timeout khi gọi balance từ đối tác
 const BALANCE_CONCURRENCY = 3; // Số request song song tối đa
-const BALANCE_TIMEOUT_MS = 30000; // Timeout cho mỗi đối tác (ms)
+const BALANCE_TIMEOUT_MS = 15000; // Timeout cho mỗi đối tác (ms)
 
 // Hàm giới hạn concurrency thủ công (không cần thêm thư viện)
 async function mapLimited(items, limit, iterator) {

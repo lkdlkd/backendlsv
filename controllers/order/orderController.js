@@ -139,15 +139,15 @@ async function addOrder(req, res) {
     const smmSvConfig = await fetchSmmConfig(serviceFromDb.DomainSmm);
 
     const smm = new SmmApiService(smmSvConfig.url_api, smmSvConfig.api_token);
-    const allServices = await smm.services();
-    const serviceFromApi = allServices.find(
-      s => s.service === Number(serviceFromDb.serviceId) || s.service === serviceFromDb.serviceId
-    );
 
-    if (!serviceFromApi) throw new Error('Dịch vụ không tồn tại');
+    // const allServices = await smm.services();
+    // const serviceFromApi = allServices.find(
+    //   s => s.service === Number(serviceFromDb.serviceId) || s.service === serviceFromDb.serviceId
+    // );
+
     // Kiểm tra số dư và số lượng
     const totalCost = serviceFromDb.rate * qty;
-    const apiRate = serviceFromApi.rate * smmSvConfig.tigia;
+    const apiRate = serviceFromDb.originalRate; // Giờ lấy từ database luôn
     if (apiRate > serviceFromDb.rate) {
       throw new Error('Lỗi khi mua dịch vụ, vui lòng ib admin');
     }
@@ -173,7 +173,7 @@ async function addOrder(req, res) {
     if (!purchaseResponse || !purchaseResponse.order) {
       if (purchaseResponse && purchaseResponse.error) {
         const err = purchaseResponse.error.toLowerCase();
-        if (err.includes('số dư') || err.includes('balance') || err.includes('xu')|| err.includes('tiền')) {
+        if (err.includes('số dư') || err.includes('balance') || err.includes('xu') || err.includes('tiền')) {
           throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
         } else {
           throw new Error(purchaseResponse.error);
@@ -265,7 +265,7 @@ async function addOrder(req, res) {
     res.status(200).json({ message: 'Mua dịch vụ thành công' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: error.message });
+    throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
   }
 }
 // Hàm cập nhật trạng thái đơn hàng (chỉ admin)

@@ -112,23 +112,25 @@ exports.AddOrder = async (req, res) => {
         const smmSvConfig = await fetchSmmConfig(serviceFromDb.DomainSmm);
 
         const smm = new SmmApiService(smmSvConfig.url_api, smmSvConfig.api_token);
-        const allServices = await smm.services();
+        // const allServices = await smm.services();
 
-        const serviceFromApi = allServices.find(
-            s => s.service === Number(serviceFromDb.serviceId) || s.service === serviceFromDb.serviceId
-        );
-        if (!serviceFromApi) throw new Error('lỗi khi mua dịch vụ, vui lòng ib admin11');
+        // const serviceFromApi = allServices.find(
+        //     s => s.service === Number(serviceFromDb.serviceId) || s.service === serviceFromDb.serviceId
+        // );
+        // if (!serviceFromApi) throw new Error('lỗi khi mua dịch vụ, vui lòng ib admin11');
 
 
         // Tính tổng chi phí và làm tròn 2 số thập phân
         const totalCost = serviceFromDb.rate * qty; // Kết quả: 123.4
-        const apiRate = serviceFromApi.rate * smmSvConfig.tigia;
+        const apiRate = serviceFromDb.originalRate; // Giờ lấy từ database luôn
         if (apiRate > serviceFromDb.rate) {
-            return res.status(400).json({ error: 'Lỗi khi mua dịch vụ, vui lòng ib admin' });
+            throw new Error('Lỗi khi mua dịch vụ, vui lòng ib admin');
+            // return res.status(400).json({ error: 'Lỗi khi mua dịch vụ, vui lòng ib admin' });
         }
 
         if (!serviceFromDb.isActive) {
-            return res.status(400).json({ error: "Dịch vụ bảo trì, vui lòng mua sv khác" });
+            throw new Error("Dịch vụ bảo trì, vui lòng mua sv khác");
+            // return res.status(400).json({ error: "Dịch vụ bảo trì, vui lòng mua sv khác" });
         }
         if (qty < serviceFromDb.min || qty > serviceFromDb.max) {
             throw new Error('Số lượng không hợp lệ');
@@ -249,7 +251,7 @@ exports.AddOrder = async (req, res) => {
         res.status(200).json({ order: newMadon });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Không thể thêm đơn hàng', error: error.message });
+        throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
     }
 };
 
