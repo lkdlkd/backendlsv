@@ -251,7 +251,7 @@ exports.AddOrder = async (req, res) => {
         res.status(200).json({ order: newMadon });
     } catch (error) {
         console.error(error);
-        throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
+        res.status(500).json({ error: 'Lỗi khi mua dịch vụ, vui lòng thử lại' });
     }
 };
 
