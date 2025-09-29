@@ -73,7 +73,7 @@ async function fetchSmmConfig(domain) {
 }
 
 async function fetchServiceData(magoi) {
-    const serviceFromDb = await Service.findOne({ Magoi: magoi }).populate("category", "name").populate("DomainSmm", "name");
+    const serviceFromDb = await Service.findOne({ Magoi: magoi }).populate("category", "name").populate("DomainSmm", "name").populate("type", "name");
     if (!serviceFromDb) throw new Error('Dịch vụ không tồn tại');
     return serviceFromDb;
 }
@@ -154,7 +154,12 @@ exports.AddOrder = async (req, res) => {
 
         const purchaseResponse = await smm.order(purchasePayload);
         if (!purchaseResponse || !purchaseResponse.order) {
+            if (purchaseResponse?.status === 500) {
+                throw new Error("Lỗi khi mua dịch vụ, vui lòng thử lại");
+            }
+            console.error('Đối tác trả về', purchaseResponse);
             if (purchaseResponse && purchaseResponse.error) {
+                console.error('Đối tác trả về lỗi', purchaseResponse.error);
                 const err = purchaseResponse.error.toLowerCase();
                 if (err.includes('số dư') || err.includes('balance') || err.includes('xu') || err.includes('tiền')) {
                     throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
@@ -176,6 +181,53 @@ exports.AddOrder = async (req, res) => {
 
         // --- Bước 7: Tạo đối tượng đơn hàng và lưu vào CSDL ---
         const createdAt = new Date();
+        // Xây dựng ObjectLink cho dịch vụ facebook (nếu áp dụng)
+        let objectLinkForStore = "";
+        try {
+            if (serviceFromDb.type && serviceFromDb.type.name) {
+                const platformRaw = serviceFromDb.type.name.toLowerCase();
+                const isFacebook = platformRaw.includes('facebook') || platformRaw === 'fb' || platformRaw.includes(' fb');
+                const isTiktok = platformRaw.includes('tiktok') || platformRaw === 'tt';
+                const isInstagram = platformRaw.includes('instagram') || platformRaw === 'ig';
+                const raw = (link || '').trim();
+                if (!raw) {
+                    // nothing
+                } else if (isFacebook) {
+                    if (/^https?:\/\//i.test(raw)) {
+                        objectLinkForStore = raw;
+                    } else if (/^facebook\.com\//i.test(raw)) {
+                        objectLinkForStore = 'https://' + raw;
+                    } else if (/^fb\.com\//i.test(raw)) {
+                        objectLinkForStore = 'https://' + raw.replace(/^fb\.com/i, 'facebook.com');
+                    } else {
+                        const cleaned = raw.replace(/^\/+/, '');
+                        objectLinkForStore = 'https://facebook.com/' + cleaned;
+                    }
+                } else if (isTiktok) {
+                    if (/^https?:\/\//i.test(raw)) {
+                        objectLinkForStore = raw;
+                    } else if (/^tiktok\.com\//i.test(raw)) {
+                        objectLinkForStore = 'https://' + raw;
+                    } else {
+                        let cleaned = raw.replace(/^\/+/, '');
+                        if (cleaned.startsWith('@')) cleaned = cleaned; // keep @ for tiktok
+                        else if (!/\//.test(cleaned)) cleaned = '@' + cleaned; // plain username
+                        objectLinkForStore = 'https://www.tiktok.com/' + cleaned;
+                    }
+                } else if (isInstagram) {
+                    if (/^https?:\/\//i.test(raw)) {
+                        objectLinkForStore = raw;
+                    } else if (/^instagram\.com\//i.test(raw)) {
+                        objectLinkForStore = 'https://' + raw;
+                    } else {
+                        let cleaned = raw.replace(/^\/+/, '');
+                        if (cleaned.startsWith('@')) cleaned = cleaned.slice(1);
+                        objectLinkForStore = 'https://www.instagram.com/' + cleaned.replace(/\/+$/, '');
+                    }
+                }
+            }
+        } catch (_) { /* ignore build object link error */ }
+
         const orderData = new Order({
             Madon: newMadon,
             Magoi: serviceFromDb.Magoi,
@@ -190,8 +242,9 @@ exports.AddOrder = async (req, res) => {
             rate: serviceFromDb.rate,
             totalCost,
             createdAt,
+            ObjectLink: objectLinkForStore || link,
             status: 'Pending',
-            note: "",
+            note: "api/v2",
             comments: formattedComments,
             DomainSmm: serviceFromDb.DomainSmm,
             lai: lai,
@@ -240,7 +293,7 @@ exports.AddOrder = async (req, res) => {
                     minute: "2-digit",
                     second: "2-digit",
                 })}\n` +
-                `📝 *Ghi chú:* ${'Không có'}\n` +
+                `📝 *Ghi chú:* ${'api/v2'}\n` +
                 `Nguồn: ${serviceFromDb.DomainSmm.name}`;
             await sendTelegramNotification({
                 telegramBotToken: teleConfig.botToken,

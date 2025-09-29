@@ -93,7 +93,9 @@ async function deleteOrder(req, res) {
 }
 // order
 async function fetchServiceData(magoi) {
-  const serviceFromDb = await Service.findOne({ Magoi: magoi }).populate('DomainSmm', 'name');
+  const serviceFromDb = await Service.findOne({ Magoi: magoi })
+    .populate('DomainSmm', 'name')
+    .populate('type', 'name');
   if (!serviceFromDb) throw new Error('Dịch vụ không tồn tại');
   return serviceFromDb;
 }
@@ -171,7 +173,13 @@ async function addOrder(req, res) {
     };
     const purchaseResponse = await smm.order(purchasePayload);
     if (!purchaseResponse || !purchaseResponse.order) {
+      if (purchaseResponse?.status === 500) {
+        throw new Error("Lỗi khi mua dịch vụ, vui lòng thử lại");
+      }
+      console.error('Đối tác trả về', purchaseResponse);
       if (purchaseResponse && purchaseResponse.error) {
+        console.error('Đối tác trả về lỗi', purchaseResponse.error);
+
         const err = purchaseResponse.error.toLowerCase();
         if (err.includes('số dư') || err.includes('balance') || err.includes('xu') || err.includes('tiền')) {
           throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
@@ -191,6 +199,52 @@ async function addOrder(req, res) {
     const newMadon = lastOrder && lastOrder.Madon ? Number(lastOrder.Madon) + 1 : 10000;
 
     const createdAt = new Date();
+    // Xây dựng ObjectLink cho các nền tảng facebook / tiktok / instagram
+    let normalizedObjectLink = '';
+    try {
+      if (serviceFromDb.type && serviceFromDb.type.name) {
+        const platformRaw = serviceFromDb.type.name.toLowerCase();
+        const isFacebook = platformRaw.includes('facebook') || platformRaw === 'fb' || platformRaw.includes(' fb');
+        const isTiktok = platformRaw.includes('tiktok') || platformRaw === 'tt';
+        const isInstagram = platformRaw.includes('instagram') || platformRaw === 'ig';
+        const raw = (ObjectLink || '').trim();
+        if (raw) {
+          if (isFacebook) {
+            if (/^https?:\/\//i.test(raw)) {
+              normalizedObjectLink = raw;
+            } else if (/^facebook\.com\//i.test(raw)) {
+              normalizedObjectLink = 'https://' + raw;
+            } else if (/^fb\.com\//i.test(raw)) {
+              normalizedObjectLink = 'https://' + raw.replace(/^fb\.com/i, 'facebook.com');
+            } else {
+              const cleaned = raw.replace(/^\/+/, '');
+              normalizedObjectLink = 'https://facebook.com/' + cleaned;
+            }
+          } else if (isTiktok) {
+            if (/^https?:\/\//i.test(raw)) {
+              normalizedObjectLink = raw;
+            } else if (/^tiktok\.com\//i.test(raw)) {
+              normalizedObjectLink = 'https://' + raw;
+            } else {
+              let cleaned = raw.replace(/^\/+/, '');
+              if (cleaned.startsWith('@')) cleaned = cleaned; else if (!/\//.test(cleaned)) cleaned = '@' + cleaned;
+              normalizedObjectLink = 'https://www.tiktok.com/' + cleaned;
+            }
+          } else if (isInstagram) {
+            if (/^https?:\/\//i.test(raw)) {
+              normalizedObjectLink = raw;
+            } else if (/^instagram\.com\//i.test(raw)) {
+              normalizedObjectLink = 'https://' + raw;
+            } else {
+              let cleaned = raw.replace(/^\/+/, '');
+              if (cleaned.startsWith('@')) cleaned = cleaned.slice(1);
+              normalizedObjectLink = 'https://www.instagram.com/' + cleaned.replace(/\/+$/,'');
+            }
+          }
+        }
+      }
+    } catch (_) { /* ignore normalization error */ }
+
     const orderData = new Order({
       Madon: newMadon,
       Magoi: serviceFromDb.Magoi,
@@ -206,7 +260,7 @@ async function addOrder(req, res) {
       totalCost,
       status: 'Pending',
       note,
-      ObjectLink,
+      ObjectLink: normalizedObjectLink || ObjectLink,
       comments: formattedComments,
       DomainSmm: serviceFromDb.DomainSmm,
       tientieu: tientieu,

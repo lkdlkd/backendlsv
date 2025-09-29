@@ -71,7 +71,7 @@ exports.getAllPartners = async (req, res) => {
             let balance = null;
             let balanceError = null;
             let balanceStatus = 'idle';
-            if (partner.status === 'on' && partner.url_api && partner.api_token) {
+            if (partner.url_api && partner.api_token) {
                 const smmService = new SmmApiService(partner.url_api, partner.api_token);
                 try {
                     balanceStatus = 'fetching';
