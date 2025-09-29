@@ -298,7 +298,7 @@ async function addOrder(req, res) {
         `📌 *Số lượng:* ${qty}\n` +
         `💰 *Tiền cũ:* ${Number(Math.floor(Number(user.balance + totalCost))).toLocaleString("en-US")} VNĐ\n` +
         `💰 *Tổng tiền:* ${Number(Math.floor(Number(totalCost))).toLocaleString("en-US")} VNĐ\n` +
-        `💰 *TIền còn lại:* ${Number(Math.floor(Number(newBalance))).toLocaleString("en-US")} VNĐ\n` +
+        `💰 *Tiền còn lại:* ${Number(Math.floor(Number(newBalance))).toLocaleString("en-US")} VNĐ\n` +
         `📆 *Ngày tạo:* ${createdAtVN.toLocaleString("vi-VN", {
           day: "2-digit",
           month: "2-digit",

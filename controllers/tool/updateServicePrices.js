@@ -63,6 +63,14 @@ async function updateServicePrices() {
             }
             const apiRate = apiService.rate * smmSvConfig.tigia;
             const dbRate = serviceItem.rate;
+            const previousOriginal = typeof serviceItem.originalRate === 'number' ? serviceItem.originalRate : apiRate;
+            // const direction = apiRate > previousOriginal ? 'GIẢM' : 'TĂNG';
+            let direction;
+            if (apiRate > previousOriginal) {
+              direction = 'TĂNG';
+            } else if (apiRate < previousOriginal) {
+              direction = 'GIẢM';
+            }
             // console.log(`Kiểm tra dịch vụ: ${serviceItem.name} - Giá API: ${apiRate}, Giá CSDL: ${dbRate}`);
             // So sánh và cập nhật giá
             if (
@@ -81,10 +89,12 @@ async function updateServicePrices() {
               const teleConfig = await Telegram.findOne();
               const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
               if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
-                const telegramMessage = `📌 *Cập nhật giá TĂNG!*\n` +
+                const telegramMessage = `📌 *Cập nhật giá ${direction}!*\n` +
                   `👤 *Dịch vụ:* ${serviceItem.name}\n` +
                   `🔹 *Giá cũ:* ${oldRate}\n` +
                   `🔹 *Giá mới:* ${newRate}\n` +
+                  `🔹 *Giá cũ API :* ${Math.round(previousOriginal * 10000) / 10000}\n` +
+                  `🔹 *Giá mới API :* ${Math.round(apiRate * 10000) / 10000}\n` +
                   `🔹 *Nguồn:* ${smmSvConfig.name}\n` +
                   `🔹 *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                     day: "2-digit",
@@ -123,10 +133,12 @@ async function updateServicePrices() {
               const teleConfig = await Telegram.findOne();
               const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
               if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
-                const telegramMessage = `📌 *Cập nhật giá GIẢM!*\n` +
+                const telegramMessage = `📌 *Cập nhật giá ${direction}!*\n` +
                   `👤 *Dịch vụ:* ${serviceItem.name}\n` +
                   `🔹 *Giá cũ:* ${oldRate}\n` +
                   `🔹 *Giá mới:* ${newRate}\n` +
+                  `🔹 *Giá cũ API :* ${Math.round(previousOriginal * 10000) / 10000}\n` +
+                  `🔹 *Giá mới API :* ${Math.round(apiRate * 10000) / 10000}\n` +
                   `🔹 *Nguồn:* ${smmSvConfig.name}\n` +
                   `🔹 *Thời gian:* ${taoluc.toLocaleString("vi-VN", {
                     day: "2-digit",
