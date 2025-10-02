@@ -102,7 +102,7 @@ exports.getPromotions = async (req, res) => {
         res.status(500).json({ message: 'Lỗi khi lấy danh sách khuyến mãi', error: error.message });
     }
 };
-
+/*
 exports.updateMonthlyPromotions = async () => {
     try {
         const now = new Date();
@@ -174,6 +174,44 @@ exports.updateMonthlyPromotions = async () => {
                     setSpecificDateForEndTime(endTime);
 
                     // Cập nhật thời gian mới
+                    promo.startTime = startTime;
+                    promo.endTime = endTime;
+
+                    await promo.save();
+                    console.log(`✅ Đã cập nhật thời gian cho chương trình khuyến mãi: ${promo.name}`);
+                }
+            } catch (error) {
+                console.error(`❌ Lỗi khi cập nhật chương trình khuyến mãi: ${promo.name}`, error.message);
+            }
+        }
+    } catch (error) {
+        console.error(`❌ Lỗi khi cập nhật chương trình khuyến mãi hàng tháng: ${error.message}`);
+    }
+};
+*/
+
+exports.updateMonthlyPromotions = async () => {
+    try {
+        const now = new Date();
+
+        // Lấy tất cả các chương trình khuyến mãi có repeatMonthly = true
+        const promotions = await Promotion.find({ repeatMonthly: true });
+        if (!promotions || promotions.length === 0) {
+            console.log("Không có chương trình khuyến mãi nào cần cập nhật.");
+            return;
+        }
+
+        for (const promo of promotions) {
+            try {
+                if (promo.endTime < now) {
+                    let startTime = new Date(promo.startTime);
+                    let endTime = new Date(promo.endTime);
+
+                    // Cộng thêm 1 tháng, giữ nguyên ngày và khoảng cách
+                    startTime.setMonth(startTime.getMonth() + 1);
+                    endTime.setMonth(endTime.getMonth() + 1);
+
+                    // Gán lại thời gian mới
                     promo.startTime = startTime;
                     promo.endTime = endTime;
 
