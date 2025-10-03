@@ -17,12 +17,13 @@ const platform = require('@/controllers/server/PlatformController'); // Đườn
 const configwebController = require("../controllers/website/ConfigwebController");
 const configCardController = require("../controllers/website/configCardController");
 const { createPromotion, updatePromotion, deletePromotion, getPromotions } = require('../controllers/Khuyenmai/KhuyenmaiController');
+// const Home = require("../controllers/website/Home");
 
 const SmmController = require('../controllers/Smm/Smm');
 const refillCancelController = require('../controllers/order/RefilandCancelController');
 
 const refund = require('@/controllers/order/refundController');
-
+// router.get('/home', authenticate.authenticateUser, Home.getHomeOverview);
 router.get('/refund', authenticate.authenticateAdmin, refund.getRefunds);
 router.post('/refund/approve', authenticate.authenticateAdmin, refund.adminApproveRefund);
 router.post('/refill', authenticate.authenticateUser, refillCancelController.refillOrder); // ok Thực hiện refill đơn hàng

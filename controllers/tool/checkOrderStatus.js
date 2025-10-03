@@ -354,6 +354,7 @@ async function checkOrderStatus() {
       }
       //}
     }
+    console.log(`Đã xử lý xong ${runningOrders.length} đơn hàng. từ ${Object.keys(groups).length} nguồn SMM.`);
   } catch (error) {
     console.error("Lỗi khi kiểm tra trạng thái đơn hàng:", error.message);
   }

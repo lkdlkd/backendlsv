@@ -161,27 +161,29 @@ async function updateServicePrices() {
               // Sau khi giảm giá, cập nhật lại originalRate
               serviceItem.originalRate = apiRate;
               await serviceItem.save();
-              } else {
-                 // Nếu không tăng/giảm giá, vẫn cập nhật originalRate nếu chưa có
-                  let needUpdate = false;
-                if (typeof serviceItem.originalRate !== 'number' || serviceItem.originalRate !== apiRate) {
-                  serviceItem.originalRate = apiRate;
-                  needUpdate = true;
-                }
-                if (serviceItem.serviceName !== apiService.name) {
-                  serviceItem.serviceName = apiService.name;
-                  needUpdate = true;
-                }
-                if (needUpdate) {
-                  await serviceItem.save();
-                }
-                //console.log(`Giá của ${serviceItem.name} đã bằng hoặc cao hơn giá API, bỏ qua cập nhật.`);
-              }    
+            } else {
+              // Nếu không tăng/giảm giá, vẫn cập nhật originalRate nếu chưa có
+              let needUpdate = false;
+              if (typeof serviceItem.originalRate !== 'number' || serviceItem.originalRate !== apiRate) {
+                serviceItem.originalRate = apiRate;
+                needUpdate = true;
+              }
+              if (serviceItem.serviceName !== apiService.name) {
+                serviceItem.serviceName = apiService.name;
+                needUpdate = true;
+              }
+              if (needUpdate) {
+                await serviceItem.save();
+              }
+              //console.log(`Giá của ${serviceItem.name} đã bằng hoặc cao hơn giá API, bỏ qua cập nhật.`);
+            }
+
           } catch (innerError) {
             console.error(`Lỗi khi xử lý dịch vụ ${serviceItem.name}:`, innerError.message);
           }
         })
       );
+      console.log(`Đã xử lý xong dịch vụ từ nguồn ${smmSvConfig.name} (${smmGroups[domainId].length} dịch vụ).`);
     }
   } catch (error) {
     console.error('Lỗi khi lấy danh sách dịch vụ:', error.message);
