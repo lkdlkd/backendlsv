@@ -194,14 +194,14 @@ exports.AddOrder = async (req, res) => {
                     // nothing
                 } else if (isFacebook) {
                     if (/^https?:\/\//i.test(raw)) {
-                        objectLinkForStore = raw;
+                        objectLinkForStore = raw.replace(/^https?:\/\/(facebook\.com)/i, 'https://www.facebook.com');
                     } else if (/^facebook\.com\//i.test(raw)) {
-                        objectLinkForStore = 'https://' + raw;
+                        objectLinkForStore = 'https://www.' + raw;
                     } else if (/^fb\.com\//i.test(raw)) {
-                        objectLinkForStore = 'https://' + raw.replace(/^fb\.com/i, 'facebook.com');
+                        objectLinkForStore = 'https://www.' + raw.replace(/^fb\.com/i, 'facebook.com');
                     } else {
                         const cleaned = raw.replace(/^\/+/, '');
-                        objectLinkForStore = 'https://facebook.com/' + cleaned;
+                        objectLinkForStore = 'https://www.facebook.com/' + cleaned;
                     }
                 } else if (isTiktok) {
                     if (/^https?:\/\//i.test(raw)) {

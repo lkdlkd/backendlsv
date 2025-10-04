@@ -211,14 +211,14 @@ async function addOrder(req, res) {
         if (raw) {
           if (isFacebook) {
             if (/^https?:\/\//i.test(raw)) {
-              normalizedObjectLink = raw;
+              normalizedObjectLink = raw.replace(/^https?:\/\/(facebook\.com)/i, 'https://www.facebook.com');
             } else if (/^facebook\.com\//i.test(raw)) {
-              normalizedObjectLink = 'https://' + raw;
+              normalizedObjectLink = 'https://www.' + raw;
             } else if (/^fb\.com\//i.test(raw)) {
-              normalizedObjectLink = 'https://' + raw.replace(/^fb\.com/i, 'facebook.com');
+              normalizedObjectLink = 'https://www.' + raw.replace(/^fb\.com/i, 'facebook.com');
             } else {
               const cleaned = raw.replace(/^\/+/, '');
-              normalizedObjectLink = 'https://facebook.com/' + cleaned;
+             normalizedObjectLink = 'https://www.facebook.com/' + cleaned;
             }
           } else if (isTiktok) {
             if (/^https?:\/\//i.test(raw)) {
