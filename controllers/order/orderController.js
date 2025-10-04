@@ -173,18 +173,26 @@ async function addOrder(req, res) {
     };
     const purchaseResponse = await smm.order(purchasePayload);
     if (!purchaseResponse || !purchaseResponse.order) {
-      if (purchaseResponse?.status === 500) {
-        throw new Error("Lỗi khi mua dịch vụ, vui lòng thử lại");
-      }
-      console.error('Đối tác trả về', purchaseResponse);
-      if (purchaseResponse && purchaseResponse.error) {
-        console.error('Đối tác trả về lỗi', purchaseResponse.error);
+      // Một số nguồn trả về lỗi theo nhiều dạng khác nhau
+      // const status = purchaseResponse?.status;
+      const nestedError = purchaseResponse?.data?.error || purchaseResponse?.error || purchaseResponse?.error?.message;
 
-        const err = purchaseResponse.error.toLowerCase();
-        if (err.includes('số dư') || err.includes('balance') || err.includes('xu') || err.includes('tiền')) {
+      // if (status === 500) {
+      //   throw new Error("Lỗi khi mua dịch vụ, vui lòng thử lại");
+      // }
+      if (nestedError) {
+        console.error('Đối tác trả về lỗi', nestedError);
+        const errRaw = String(nestedError);
+        const errStr = errRaw.toLowerCase();
+        // Nhạy cảm: số dư, đường link, số điện thoại VN
+        const urlRegex = /(https?:\/\/|www\.)\S+|\b[a-z0-9.-]+\.(com|net|org|io|vn|co)\b/i;
+        const phoneRegexVN = /\b(\+?84|0)(3|5|7|8|9)\d{8}\b/;
+        const isSensitive = errStr.includes('số dư') || errStr.includes('balance') || errStr.includes('xu') || errStr.includes('tiền')
+          || urlRegex.test(errRaw) || phoneRegexVN.test(errRaw);
+        if (isSensitive) {
           throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
         } else {
-          throw new Error(purchaseResponse.error);
+          throw new Error(String(nestedError));
         }
       } else {
         throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
@@ -218,7 +226,7 @@ async function addOrder(req, res) {
               normalizedObjectLink = 'https://www.' + raw.replace(/^fb\.com/i, 'facebook.com');
             } else {
               const cleaned = raw.replace(/^\/+/, '');
-             normalizedObjectLink = 'https://www.facebook.com/' + cleaned;
+              normalizedObjectLink = 'https://www.facebook.com/' + cleaned;
             }
           } else if (isTiktok) {
             if (/^https?:\/\//i.test(raw)) {
@@ -238,7 +246,7 @@ async function addOrder(req, res) {
             } else {
               let cleaned = raw.replace(/^\/+/, '');
               if (cleaned.startsWith('@')) cleaned = cleaned.slice(1);
-              normalizedObjectLink = 'https://www.instagram.com/' + cleaned.replace(/\/+$/,'');
+              normalizedObjectLink = 'https://www.instagram.com/' + cleaned.replace(/\/+$/, '');
             }
           }
         }
@@ -319,7 +327,16 @@ async function addOrder(req, res) {
     res.status(200).json({ message: 'Mua dịch vụ thành công' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Lỗi khi mua dịch vụ, vui lòng thử lại' });
+    // Nếu có lỗi từ provider, ưu tiên trả message của provider, ẩn thông tin nhạy cảm
+    const providerMsgRaw = error?.response?.data?.error || error?.message || '';
+    const providerMsg = String(providerMsgRaw || '');
+    const errStr = providerMsg.toLowerCase();
+    const urlRegex = /(https?:\/\/|www\.)\S+|\b[a-z0-9.-]+\.(com|net|org|io|vn|co)\b/i;
+    const phoneRegexVN = /\b(\+?84|0)(3|5|7|8|9)\d{8}\b/;
+    const isSensitive = errStr.includes('số dư') || errStr.includes('balance') || errStr.includes('xu') || errStr.includes('tiền')
+      || urlRegex.test(providerMsg) || phoneRegexVN.test(providerMsg);
+    const safeMessage = isSensitive || !providerMsg ? 'Lỗi khi mua dịch vụ, vui lòng thử lại' : providerMsg;
+    res.status(500).json({ error: safeMessage });
   }
 }
 // Hàm cập nhật trạng thái đơn hàng (chỉ admin)

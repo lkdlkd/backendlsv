@@ -91,17 +91,15 @@ exports.AddOrder = async (req, res) => {
         return null;
     }
     if (user.apiKey !== key) {
-        res.status(401).json({ error: 'api Key không hợp lệ1' });
+        res.status(401).json({ error: 'api Key không hợp lệ' });
         return null;
-    }
-    if (!user) {
-        return res.status(404).json({ success: false, error: "Không tìm thấy người dùng" });
     }
     if (user.status && user.status !== 'active') {
         return res.status(403).json({ success: false, error: "Người dùng không hoạt động" });
     }
-
-
+    if (!magoi || !link || !quantity) {
+        return res.status(400).json({ error: 'Thiếu thông tin bắt buộc (service, link, quantity)' });
+    }
     const username = user.username
     const qty = Number(quantity);
     const formattedComments = comments ? comments.replace(/\r?\n/g, "\r\n") : "";
@@ -154,17 +152,26 @@ exports.AddOrder = async (req, res) => {
 
         const purchaseResponse = await smm.order(purchasePayload);
         if (!purchaseResponse || !purchaseResponse.order) {
-            if (purchaseResponse?.status === 500) {
-                throw new Error("Lỗi khi mua dịch vụ, vui lòng thử lại");
-            }
-            console.error('Đối tác trả về', purchaseResponse);
-            if (purchaseResponse && purchaseResponse.error) {
-                console.error('Đối tác trả về lỗi', purchaseResponse.error);
-                const err = purchaseResponse.error.toLowerCase();
-                if (err.includes('số dư') || err.includes('balance') || err.includes('xu') || err.includes('tiền')) {
+            // Một số nguồn trả về lỗi theo nhiều dạng khác nhau
+            // const status = purchaseResponse?.status;
+            const nestedError = purchaseResponse?.data?.error || purchaseResponse?.error || purchaseResponse?.error?.message;
+
+            // if (status === 500) {
+            //     throw new Error("Lỗi khi mua dịch vụ, vui lòng thử lại");
+            // }
+            if (nestedError) {
+                console.error('Đối tác trả về lỗi', nestedError);
+                const errRaw = String(nestedError);
+                const errStr = errRaw.toLowerCase();
+                // Nhạy cảm: số dư, đường link, số điện thoại VN
+                const urlRegex = /(https?:\/\/|www\.)\S+|\b[a-z0-9.-]+\.(com|net|org|io|vn|co)\b/i;
+                const phoneRegexVN = /\b(\+?84|0)(3|5|7|8|9)\d{8}\b/;
+                const isSensitive = errStr.includes('số dư') || errStr.includes('balance') || errStr.includes('xu') || errStr.includes('tiền')
+                    || urlRegex.test(errRaw) || phoneRegexVN.test(errRaw);
+                if (isSensitive) {
                     throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
                 } else {
-                    throw new Error(purchaseResponse.error);
+                    throw new Error(String(nestedError));
                 }
             } else {
                 throw new Error('Lỗi khi mua dịch vụ, vui lòng thử lại');
@@ -303,8 +310,16 @@ exports.AddOrder = async (req, res) => {
         }
         res.status(200).json({ order: newMadon });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Lỗi khi mua dịch vụ, vui lòng thử lại' });
+        // Nếu có lỗi từ provider, ưu tiên trả message của provider nhưng ẩn thông tin nhạy cảm
+        const providerMsgRaw = error?.response?.data?.error || error?.message || '';
+        const providerMsg = String(providerMsgRaw || '');
+        const msgLower = providerMsg.toLowerCase();
+        const urlRegex = /(https?:\/\/|www\.)\S+|\b[a-z0-9.-]+\.(com|net|org|io|vn|co)\b/i;
+        const phoneRegexVN = /\b(\+?84|0)(3|5|7|8|9)\d{8}\b/;
+        const sensitive = msgLower.includes('số dư') || msgLower.includes('balance') || msgLower.includes('xu') || msgLower.includes('tiền')
+            || urlRegex.test(providerMsg) || phoneRegexVN.test(providerMsg);
+        const safeMessage = sensitive || !providerMsg ? 'Lỗi khi mua dịch vụ, vui lòng thử lại' : providerMsg;
+        res.status(500).json({ error: safeMessage });
     }
 };
 

@@ -7,16 +7,23 @@ class SmmApiService {
   }
 
   async connect(payload) {
-    const response = await axios.post(this.apiUrl, {
-      key: this.apiKey,
-      ...payload,
-    });
-    // console.log('Payload gửi đến SMM API:', {
-    //   key: this.apiKey,
-    //   ...payload,
-    // });
-    // console.log('Phản hồi từ SMM API:', response.data);
-    return response.data;
+    try {
+      const response = await axios.post(this.apiUrl, {
+        key: this.apiKey,
+        ...payload,
+      });
+      return response.data;
+    } catch (err) {
+      // Chuẩn hóa lỗi từ axios để caller luôn nhận được object thay vì throw
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      if (data && typeof data === 'object') {
+        // Nhiều panel trả về { code, status: 'error', error: '...' }
+        return data;
+      }
+      const errorMsg = (data && typeof data === 'string') ? data : (err?.message || 'Unknown error');
+      return { status, error: errorMsg };
+    }
   }
 
   async order(data) {
