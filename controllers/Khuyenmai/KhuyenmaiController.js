@@ -201,21 +201,39 @@ exports.updateMonthlyPromotions = async () => {
             return;
         }
 
+        // Helper: cộng thêm 1 tháng theo local time và clamp ngày nếu tháng mới không có ngày tương ứng
+        // VN không có DST nên local time an toàn để giữ nguyên mốc giờ thực tế (00:00, 22:30, ...)
+        const addOneMonthClampedLocal = (date) => {
+            const y = date.getFullYear();
+            const m = date.getMonth();
+            const d = date.getDate();
+            const hr = date.getHours();
+            const mi = date.getMinutes();
+            const sc = date.getSeconds();
+            const ms = date.getMilliseconds();
+            const daysInNextMonth = new Date(y, m + 2, 0).getDate();
+            const targetDay = Math.min(d, daysInNextMonth);
+            return new Date(y, m + 1, targetDay, hr, mi, sc, ms);
+        };
+
         for (const promo of promotions) {
             try {
                 if (promo.endTime < now) {
                     let startTime = new Date(promo.startTime);
                     let endTime = new Date(promo.endTime);
 
-                    // Cộng thêm 1 tháng, giữ nguyên ngày và khoảng cách
-                    startTime.setMonth(startTime.getMonth() + 1);
-                    endTime.setMonth(endTime.getMonth() + 1);
+                    // Nếu job bị trễ nhiều tháng, lặp đến khi endTime vượt qua hiện tại
+                    // do {
+                        startTime = addOneMonthClampedLocal(startTime);
+                        endTime = addOneMonthClampedLocal(endTime);
+                    // } while (endTime < now);
 
                     // Gán lại thời gian mới
                     promo.startTime = startTime;
                     promo.endTime = endTime;
 
                     await promo.save();
+                    console.log(promo.endTime, now);
                     console.log(`✅ Đã cập nhật thời gian cho chương trình khuyến mãi: ${promo.name}`);
                 }
             } catch (error) {
