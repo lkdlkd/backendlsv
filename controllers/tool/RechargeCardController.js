@@ -115,7 +115,10 @@ exports.rechargeCardStatus = async () => {
                         // Gửi thông báo Telegram nếu có cấu hình
                         const teleConfig = await Telegram.findOne();
                         const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
-                        if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+                        if (teleConfig && (teleConfig.bot_notify || teleConfig.botToken)) {
+                            const adminChatId = teleConfig.chatId;
+                            const adminbottoken = teleConfig.botToken;
+                            const userbotToken = teleConfig.bot_notify ;
                             const telegramMessage =
                                 `📌 *NẠP TIỀN THẺ CÀO!*\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
@@ -130,10 +133,29 @@ exports.rechargeCardStatus = async () => {
                                     second: "2-digit",
                                 })}\n`;
                             try {
-                                await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
-                                    chat_id: teleConfig.chatId,
-                                    text: telegramMessage,
-                                });
+                                // Gửi admin/kênh
+                                if (adminChatId) {
+                                    await axios.post(`https://api.telegram.org/bot${adminbottoken}/sendMessage`, {
+                                        chat_id: adminChatId,
+                                        text: telegramMessage,
+                                    });
+                                }
+                                // Gửi riêng cho user nếu đã liên kết Telegram
+                                if (userData.telegramChatId) {
+                                    const userMessage =
+                                        `🎉 Nạp thẻ thành công!\n` +
+                                        `💳 Mệnh giá: ${card.amount.toLocaleString()}\n` +
+                                        `✅ Cộng vào tài khoản: ${chietkhau.toLocaleString()}\n` +
+                                        `💼 Số dư mới: ${Number(Math.floor(Number(userData.balance))).toLocaleString("en-US")} VNĐ\n` +
+                                        `⏰ Thời gian: ${taoluc.toLocaleString("vi-VN", {
+                                            day: "2-digit", month: "2-digit", year: "numeric",
+                                            hour: "2-digit", minute: "2-digit", second: "2-digit",
+                                        })}`;
+                                    await axios.post(`https://api.telegram.org/bot${userbotToken}/sendMessage`, {
+                                        chat_id: userData.telegramChatId,
+                                        text: userMessage,
+                                    });
+                                }
                                 console.log('Thông báo Telegram đã được gửi.');
                             } catch (telegramError) {
                                 console.error('Lỗi gửi thông báo Telegram:', telegramError.message);
@@ -178,7 +200,10 @@ exports.rechargeCardStatus = async () => {
                         // Gửi thông báo Telegram nếu có cấu hình
                         const teleConfig = await Telegram.findOne();
                         const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
-                        if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+                        if (teleConfig && (teleConfig.bot_notify || teleConfig.botToken)) {
+                            const adminChatId = teleConfig.chatId;
+                            const adminbottoken = teleConfig.botToken;
+                            const userbotToken = teleConfig.bot_notify;
                             const telegramMessage =
                                 `📌 *NẠP TIỀN THẺ CÀO!*\n` +
                                 `👤 *Khách hàng:* ${card.username}\n` +
@@ -192,10 +217,29 @@ exports.rechargeCardStatus = async () => {
                                     second: "2-digit",
                                 })}\n`;
                             try {
-                                await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
-                                    chat_id: teleConfig.chatId,
-                                    text: telegramMessage,
-                                });
+                                // Gửi admin/kênh
+                                if (adminChatId) {
+                                    await axios.post(`https://api.telegram.org/bot${adminbottoken}/sendMessage`, {
+                                        chat_id: adminChatId,
+                                        text: telegramMessage,
+                                    });
+                                }
+                                // Gửi riêng cho user nếu đã liên kết Telegram
+                                const userData = await User.findOne({ username: card.username });
+                                if (userData?.telegramChatId) {
+                                    const userMessage =
+                                        `⚠️ Nạp thẻ sai mệnh giá\n` +
+                                        `💳 Giá trị thẻ: ${statusCard.data.value.toLocaleString()}\n` +
+                                        `✅ Cộng vào tài khoản: ${chietkhau2.toLocaleString()}\n` +
+                                        `⏰ Thời gian: ${taoluc.toLocaleString("vi-VN", {
+                                            day: "2-digit", month: "2-digit", year: "numeric",
+                                            hour: "2-digit", minute: "2-digit", second: "2-digit",
+                                        })}`;
+                                    await axios.post(`https://api.telegram.org/bot${userbotToken}/sendMessage`, {
+                                        chat_id: userData.telegramChatId,
+                                        text: userMessage,
+                                    });
+                                }
                                 console.log('Thông báo Telegram đã được gửi.');
                             } catch (telegramError) {
                                 console.error('Lỗi gửi thông báo Telegram:', telegramError.message);

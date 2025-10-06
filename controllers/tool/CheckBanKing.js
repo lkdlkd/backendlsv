@@ -89,7 +89,7 @@ async function calculateBonus(amount) {
 }
 
 // Cron job mỗi phút
-cron.schedule('*/30 * * * * *', async () => {
+cron.schedule('*/15 * * * * *', async () => {
     console.log('⏳ Đang chạy cron job...');
 
     try {
@@ -174,7 +174,10 @@ cron.schedule('*/30 * * * * *', async () => {
                             // Lấy cấu hình Telegram từ DB
                             const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000); // Giờ Việt Nam (UTC+7)
                             const teleConfig = await Telegram.findOne();
-                            if (teleConfig && teleConfig.botToken && teleConfig.chatId) {
+                            if (teleConfig && (teleConfig.bot_notify || teleConfig.botToken)) {
+                                const adminChatId = teleConfig.chatId;
+                                const adminbottoken = teleConfig.botToken;
+                                const userbotToken = teleConfig.bot_notify;
                                 const telegramMessage =
                                     `📌 *NẠP TIỀN THÀNH CÔNG!*\n` +
                                     `📌 *Trans_id:* ${trans.transactionID || "khong co"}\n` +
@@ -192,11 +195,31 @@ cron.schedule('*/30 * * * * *', async () => {
                                         second: "2-digit",
                                     })}\n`;
                                 try {
-                                    await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
-                                        chat_id: teleConfig.chatId,
-                                        text: telegramMessage,
-                                        parse_mode: "Markdown",
-                                    });
+                                    // Gửi cho kênh/quản trị (admin)
+                                    if (adminChatId) {
+                                        await axios.post(`https://api.telegram.org/bot${adminbottoken}/sendMessage`, {
+                                            chat_id: adminChatId,
+                                            text: telegramMessage,
+                                            parse_mode: "Markdown",
+                                        });
+                                    }
+                                    // Gửi riêng cho user nếu có liên kết telegramChatId
+                                    if (user.telegramChatId) {
+                                        const userMessage =
+                                            `🎉 Bạn vừa nạp tiền thành công!\n` +
+                                            `💰 Số tiền: ${amount.toLocaleString()}\n` +
+                                            (bonus > 0 ? `🎁 Khuyến mãi: +${bonus.toLocaleString()}\n` : '') +
+                                            `🔹 Tổng cộng: ${totalAmount.toLocaleString()}\n` +
+                                            `💼 Số dư mới: ${Number(Math.floor(Number(user.balance))).toLocaleString("en-US")} VNĐ\n` +
+                                            `⏰ Thời gian: ${taoluc.toLocaleString("vi-VN", {
+                                                day: "2-digit", month: "2-digit", year: "numeric",
+                                                hour: "2-digit", minute: "2-digit", second: "2-digit",
+                                            })}`;
+                                        await axios.post(`https://api.telegram.org/bot${userbotToken}/sendMessage`, {
+                                            chat_id: user.telegramChatId,
+                                            text: userMessage,
+                                        });
+                                    }
                                     console.log("Thông báo Telegram đã được gửi.");
                                 } catch (telegramError) {
                                     console.error("Lỗi gửi thông báo Telegram:", telegramError.message);
