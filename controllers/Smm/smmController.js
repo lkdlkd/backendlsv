@@ -76,6 +76,8 @@ exports.getAllPartners = async (req, res) => {
                 try {
                     balanceStatus = 'fetching';
                     const balanceData = await withTimeout(smmService.balance(), timeoutMs);
+
+                    console.log("Balance data from", partner.name, ":", balanceData);
                     let rawBalance = parseFloat(balanceData.balance);
                     if (Number.isNaN(rawBalance)) {
                         throw new Error(balanceData.error || 'lỗi');

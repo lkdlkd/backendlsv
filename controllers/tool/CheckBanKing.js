@@ -89,7 +89,7 @@ async function calculateBonus(amount) {
 }
 
 // Cron job mỗi phút
-cron.schedule('*/15 * * * * *', async () => {
+cron.schedule('*/30 * * * * *', async () => {
     console.log('⏳ Đang chạy cron job...');
 
     try {

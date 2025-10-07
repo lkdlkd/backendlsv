@@ -1,24 +1,79 @@
 const axios = require('axios');
+const FormData = require('form-data');
 
 class SmmApiService {
-  constructor(apiUrl, apiKey) {
+  /**
+   * @param {string} apiUrl
+   * @param {string} apiKey
+   * @param {{ defaultEncoding?: 'form'|'multipart'|'json', timeout?: number, defaultHeaders?: Record<string,string> }} [options]
+   */
+  constructor(apiUrl, apiKey, options = {}) {
     this.apiUrl = apiUrl;
     this.apiKey = apiKey;
+    this.defaultEncoding = options.defaultEncoding || 'form'; // 'form' | 'multipart' | 'json'
+    this.timeout = typeof options.timeout === 'number' ? options.timeout : 15000;
+    this.defaultHeaders = options.defaultHeaders || { Accept: 'application/json' };
   }
 
-  async connect(payload) {
+  buildFormBody(obj) {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(obj || {})) {
+      if (v === undefined || v === null) continue;
+      if (typeof v === 'object') params.append(k, JSON.stringify(v));
+      else params.append(k, String(v));
+    }
+    return params;
+  }
+
+  buildMultipartBody(obj) {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries(obj || {})) {
+      if (v === undefined || v === null) continue;
+      if (v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, 'value')) {
+        fd.append(k, v.value, v.options || {});
+      } else if (typeof v === 'object') {
+        fd.append(k, JSON.stringify(v));
+      } else {
+        fd.append(k, String(v));
+      }
+    }
+    return fd;
+  }
+
+  /**
+   * @param {object} payload - API params
+   * @param {{ encoding?: 'form'|'multipart'|'json', headers?: Record<string,string> }} [opts]
+   */
+  async connect(payload, opts = {}) {
     try {
-      const response = await axios.post(this.apiUrl, {
-        key: this.apiKey,
-        ...payload,
+      const { encoding = this.defaultEncoding, headers = {} } = opts;
+      // loại các key nội bộ
+      const { _encoding, ...rest } = payload || {};
+      const dataObj = { key: this.apiKey, ...rest };
+
+      let data;
+      let reqHeaders = { ...this.defaultHeaders, ...headers };
+      if (encoding === 'multipart') {
+        data = this.buildMultipartBody(dataObj);
+        reqHeaders = { ...reqHeaders, ...data.getHeaders() };
+      } else if (encoding === 'json') {
+        data = dataObj;
+        reqHeaders = { ...reqHeaders, 'Content-Type': 'application/json' };
+      } else {
+        // mặc định: x-www-form-urlencoded
+        data = this.buildFormBody(dataObj);
+        reqHeaders = { ...reqHeaders, 'Content-Type': 'application/x-www-form-urlencoded' };
+      }
+
+      const response = await axios.post(this.apiUrl, data, {
+        headers: reqHeaders,
+        timeout: this.timeout,
       });
       return response.data;
     } catch (err) {
-      // Chuẩn hóa lỗi từ axios để caller luôn nhận được object thay vì throw
       const status = err?.response?.status;
       const data = err?.response?.data;
       if (data && typeof data === 'object') {
-        // Nhiều panel trả về { code, status: 'error', error: '...' }
         return data;
       }
       const errorMsg = (data && typeof data === 'string') ? data : (err?.message || 'Unknown error');
@@ -26,48 +81,48 @@ class SmmApiService {
     }
   }
 
-  async order(data) {
-    return this.connect({ action: 'add', ...data });
+  async order(data, opts) {
+    return this.connect({ action: 'add', ...data }, opts);
   }
 
-  async status(orderId) {
-    return this.connect({ action: 'status', order: orderId });
+  async status(orderId, opts) {
+    return this.connect({ action: 'status', order: orderId }, opts);
   }
 
-  async multiStatus(orderIds) {
-    return this.connect({ action: 'status', orders: orderIds.join(',') });
+  async multiStatus(orderIds, opts) {
+    return this.connect({ action: 'status', orders: orderIds.join(',') }, opts);
   }
 
-  async services() {
-    return this.connect({ action: 'services' });
+  async services(opts) {
+    return this.connect({ action: 'services' }, opts);
   }
 
-  async refill(orderId) {
-    return this.connect({ action: 'refill', order: orderId });
+  async refill(orderId, opts) {
+    return this.connect({ action: 'refill', order: orderId }, opts);
   }
 
-  async multiRefill(orderIds) {
-    return this.connect({ action: 'refill', orders: orderIds.join(',') });
+  async multiRefill(orderIds, opts) {
+    return this.connect({ action: 'refill', orders: orderIds.join(',') }, opts);
   }
 
-  async refillStatus(refillId) {
-    return this.connect({ action: 'refill_status', refill: refillId });
+  async refillStatus(refillId, opts) {
+    return this.connect({ action: 'refill_status', refill: refillId }, opts);
   }
 
-  async multiRefillStatus(refillIds) {
-    return this.connect({ action: 'refill_status', refills: refillIds.join(',') });
+  async multiRefillStatus(refillIds, opts) {
+    return this.connect({ action: 'refill_status', refills: refillIds.join(',') }, opts);
   }
 
-  async cancel2(orderIds) {
-    return this.connect({ action: 'cancel', order: orderIds });
+  async cancel2(orderIds, opts) {
+    return this.connect({ action: 'cancel', order: orderIds }, opts);
   }
 
-  async cancel(orderIds) {
-    return this.connect({ action: 'cancel', orders: orderIds.join(',') });
+  async cancel(orderIds, opts) {
+    return this.connect({ action: 'cancel', orders: orderIds.join(',') }, opts);
   }
 
-  async balance() {
-    return this.connect({ action: 'balance' });
+  async balance(opts) {
+    return this.connect({ action: 'balance' }, opts);
   }
 }
 
