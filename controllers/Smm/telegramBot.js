@@ -94,7 +94,7 @@ function startTelegramConfigWatcher() {
 }
 
 // ===== SMM balance cron =====
-const SMM_CHECK_CRON = process.env.SMM_CHECK_CRON || '*/1 * * * *';
+const SMM_CHECK_CRON = process.env.SMM_CHECK_CRON || '*/15 * * * *';
 // Threshold is now taken from each panel's `minbalance` field (per-partner setting)
 const SMM_BALANCE_TIMEOUT_MS = Number(process.env.SMM_BALANCE_TIMEOUT_MS || 15000);
 
