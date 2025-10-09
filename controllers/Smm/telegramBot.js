@@ -94,8 +94,8 @@ function startTelegramConfigWatcher() {
 }
 
 // ===== SMM balance cron =====
-const SMM_CHECK_CRON = process.env.SMM_CHECK_CRON || '*/15 * * * *';
-const SMM_BALANCE_THRESHOLD = Number(process.env.SMM_BALANCE_THRESHOLD || 100000);
+const SMM_CHECK_CRON = process.env.SMM_CHECK_CRON || '*/1 * * * *';
+// Threshold is now taken from each panel's `minbalance` field (per-partner setting)
 const SMM_BALANCE_TIMEOUT_MS = Number(process.env.SMM_BALANCE_TIMEOUT_MS || 15000);
 
 async function fetchPanelBalance(panel) {
@@ -122,16 +122,20 @@ async function checkSmmBalancesAndNotify() {
         let converted = rawBalance;
         if (data.currency === 'USD') converted = rawBalance * (p.tigia || 1) * 1000;
         else if (data.currency === 'XU') converted = rawBalance * (p.tigia || 1);
-        if (converted < SMM_BALANCE_THRESHOLD) {
-          lowPanels.push({ name: p.name, balance: converted, currency: data.currency, raw: rawBalance });
+        const threshold = typeof p.minbalance === 'number' && !Number.isNaN(p.minbalance)
+          ? p.minbalance
+          : 100000; // fallback if not set
+        if (converted < threshold) {
+          lowPanels.push({ name: p.name, balance: converted, currency: data.currency, raw: rawBalance, threshold });
         }
       } catch (_) { /* ignore panel error */ }
     }
     if (lowPanels.length) {
       const taoluc = new Date(Date.now() + 7 * 60 * 60 * 1000).toLocaleString('vi-VN');
-      // const lines = lowPanels.map(p => `• ${p.name}: ${Math.round(p.balance).toLocaleString('en-US')} VND (raw ${p.raw} ${p.currency || ''})`).join('\n');
-      const lines = lowPanels.map(p => `• ${p.name}: ${Math.round(p.balance).toLocaleString('en-US')} VND `).join('\n');
-      const msg = `⚠️ *Cảnh báo số dư ĐỐI TÁC thấp*\nDưới: ${SMM_BALANCE_THRESHOLD.toLocaleString('en-US')} VND\n${lines}\n⏰ ${taoluc}`;
+      const lines = lowPanels
+        .map(p => `• ${p.name}: ${Math.round(p.balance).toLocaleString('en-US')} VND < ${Math.round(p.threshold).toLocaleString('en-US')} VND`)
+        .join('\n');
+      const msg = `⚠️ *Cảnh báo số dư ĐỐI TÁC thấp*\n${lines}\n⏰ ${taoluc}`;
       try {
         await axios.post(`https://api.telegram.org/bot${teleConfig.botToken}/sendMessage`, {
           chat_id: teleConfig.chatId,

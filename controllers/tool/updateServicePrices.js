@@ -70,6 +70,8 @@ async function updateServicePrices() {
               direction = 'TĂNG';
             } else if (apiRate < previousOriginal) {
               direction = 'GIẢM';
+            }else {
+              direction = 'KHÔNG ĐỔI';
             }
             // console.log(`Kiểm tra dịch vụ: ${serviceItem.name} - Giá API: ${apiRate}, Giá CSDL: ${dbRate}`);
             // So sánh và cập nhật giá
